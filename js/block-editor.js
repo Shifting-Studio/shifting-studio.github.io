@@ -9,7 +9,7 @@ const groups = [
 ];
 const templates=groups.flatMap(group=>group.pages.map((p,i)=>({category:group.name,title:p[0],icon:p[1],hint:p[2],position:i})));
 const drId=new URLSearchParams(location.search).get('dr');
-let user,dr,pages=[],synced=[],current=null,blocks=[],version=0,savedVersion=0,savingPromise=null,timer=null,changing=false;
+let user,dr,pages=[],synced=[],current=null,blocks=[],version=0,savedVersion=0,savingPromise=null,timer=null,changing=false,uploads=0;
 const status=msg=>$('save-state').textContent=msg;
 const error=msg=>$('page-error').textContent=msg||'';
 const node=(tag,cls,text)=>{const el=document.createElement(tag);el.className=cls||'';if(text!==undefined)el.textContent=text;return el;};
@@ -19,10 +19,18 @@ function normalize(content){
   if(!Array.isArray(content))return [];
   return content.filter(b=>b&&typeof b==='object').map(b=>({
     id:typeof b.id==='string'?b.id:id(),
-    type:['paragraph','heading','quote','checklist','divider','synced'].includes(b.type)?b.type:'paragraph',
+    type:['paragraph','heading','quote','checklist','divider','synced','image','gallery','columns','profile'].includes(b.type)?b.type:'paragraph',
     text:typeof b.text==='string'?b.text:'',
     checked:!!b.checked,
-    syncId:typeof b.syncId==='string'?b.syncId:null
+    syncId:typeof b.syncId==='string'?b.syncId:null,
+    imagePath:typeof b.imagePath==='string'?b.imagePath:'',
+    galleryPaths:Array.isArray(b.galleryPaths)?b.galleryPaths.filter(p=>typeof p==='string'):[],
+    caption:typeof b.caption==='string'?b.caption:'',
+    left:typeof b.left==='string'?b.left:'',
+    right:typeof b.right==='string'?b.right:'',
+    profileName:typeof b.profileName==='string'?b.profileName:'',
+    profileRole:typeof b.profileRole==='string'?b.profileRole:'',
+    profileBio:typeof b.profileBio==='string'?b.profileBio:''
   }));
 }
 function changed(){version++;status('Unsaved changes…');clearTimeout(timer);timer=setTimeout(savePage,750);}
@@ -48,6 +56,43 @@ async function loadSynced(){
   synced=data||[];return true;
 }
 function makeAction(label,callback,title){const btn=node('button','',label);btn.type='button';btn.title=title||label;btn.addEventListener('click',callback);return btn;}
+async function signedImage(path,img){
+  if(!path)return;
+  const result=await supabase.storage.from('script-images').createSignedUrl(path,3600);
+  if(result.error){img.alt='Image unavailable';return;}
+  if(img.isConnected)img.src=result.data.signedUrl;
+}
+function photo(path,cls='media-preview'){
+  const img=node('img',cls);img.alt='Script image';img.loading='lazy';signedImage(path,img);return img;
+}
+async function uploadImages(files,block,multiple=false){
+  const selected=[...files];if(!selected.length)return;
+  if(multiple&&block.galleryPaths.length+selected.length>12){error('A gallery can contain up to 12 images.');return;}
+  uploads++;status('Uploading images…');error();
+  try{
+    for(const file of selected){
+      const extensions={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif'};
+      const ext=extensions[file.type];
+      if(!ext||file.size>5*1024*1024)throw new Error('Use JPG, PNG, WebP or GIF files, up to 5 MB each.');
+      const path=`${user.id}/${dr.id}/${block.id}/${crypto.randomUUID()}.${ext}`;
+      const result=await supabase.storage.from('script-images').upload(path,file,{contentType:file.type,upsert:false});
+      if(result.error)throw result.error;
+      if(multiple)block.galleryPaths.push(path);else block.imagePath=path;
+      changed();
+    }
+    renderBlocks();
+  }catch(e){error(`Image upload failed: ${e.message}. Make sure you've run the Storage SQL.`);}
+  finally{uploads--;if(version!==savedVersion)await savePage();else status('✓ All changes saved');}
+}
+function uploader(block,multiple=false){
+  const label=node('label','upload-label',multiple?'＋ Add gallery images':'＋ Upload image');
+  const input=node('input');input.type='file';input.accept='image/jpeg,image/png,image/webp,image/gif';input.multiple=multiple;
+  input.addEventListener('change',()=>uploadImages(input.files,block,multiple));label.append(input);return label;
+}
+function field(value,placeholder,onChange,cls='media-caption'){
+  const input=node('input',cls);input.value=value;input.placeholder=placeholder;
+  input.addEventListener('input',()=>{onChange(input.value);changed();});return input;
+}
 function renderBlocks(){
   const list=$('block-list');list.replaceChildren();
   if(!blocks.length){list.append(node('div','empty-blocks','Start with “＋ Text” or add a synced block from your library.'));return;}
@@ -64,6 +109,34 @@ function renderBlocks(){
       const link=node('a','text-button','Edit in Synced Blocks Library ↗');link.href='synced-blocks.html';item.append(link);
     }else if(block.type==='divider'){
       item.append(document.createElement('hr'));
+    }else if(block.type==='image'){
+      if(block.imagePath)item.append(photo(block.imagePath));
+      item.append(uploader(block));
+      item.append(field(block.caption,'Write an image caption…',v=>block.caption=v));
+    }else if(block.type==='gallery'){
+      const gallery=node('div','media-gallery');
+      block.galleryPaths.forEach((path,photoIndex)=>{
+        const wrap=node('div','gallery-photo'),img=photo(path),removePhoto=makeAction('×',()=>{block.galleryPaths.splice(photoIndex,1);changed();renderBlocks();},'Remove from gallery');
+        wrap.append(img,removePhoto);gallery.append(wrap);
+      });
+      item.append(gallery,uploader(block,true));
+      item.append(field(block.caption,'Gallery caption…',v=>block.caption=v));
+    }else if(block.type==='columns'){
+      const columns=node('div','two-column-block');
+      for(const side of ['left','right']){
+        const textarea=node('textarea','block-input');textarea.value=block[side];textarea.placeholder=side==='left'?'Left column…':'Right column…';
+        textarea.addEventListener('input',()=>{block[side]=textarea.value;changed();});columns.append(textarea);
+      }item.append(columns);
+    }else if(block.type==='profile'){
+      const profile=node('div','profile-block'),portrait=node('div','');
+      if(block.imagePath)portrait.append(photo(block.imagePath,'profile-portrait'));
+      portrait.append(uploader(block));
+      const info=node('div','');
+      info.append(field(block.profileName,'Character name',v=>block.profileName=v,'profile-field profile-name'));
+      info.append(field(block.profileRole,'Relationship / role',v=>block.profileRole=v,'profile-field'));
+      const bio=node('textarea','profile-field profile-bio');bio.placeholder='Biography, personality, important details…';bio.value=block.profileBio;
+      bio.addEventListener('input',()=>{block.profileBio=bio.value;changed();});info.append(bio);
+      profile.append(portrait,info);item.append(profile);
     }else{
       if(block.type==='checklist'){
         const checked=node('input');checked.type='checkbox';checked.checked=block.checked;checked.setAttribute('aria-label','Checklist completed');
@@ -77,12 +150,13 @@ function renderBlocks(){
     list.append(item);
   });
 }
-function add(type,syncId=null){blocks.push({id:id(),type,text:'',checked:false,syncId});changed();renderBlocks();}
+function add(type,syncId=null){blocks.push({id:id(),type,text:'',checked:false,syncId,imagePath:'',galleryPaths:[],caption:'',left:'',right:'',profileName:'',profileRole:'',profileBio:''});changed();renderBlocks();}
 function move(i,delta){const target=i+delta;if(target<0||target>=blocks.length)return;[blocks[i],blocks[target]]=[blocks[target],blocks[i]];changed();renderBlocks();}
 function remove(i){blocks.splice(i,1);changed();renderBlocks();}
 async function selectPage(title){
   if(changing)return;changing=true;
   try{
+    if(uploads){error('Wait for your images to finish uploading before switching pages.');return;}
     if(current&&!(await flush()))return;
     const next=pages.find(page=>page.title===title),template=templates.find(t=>t.title===title);
     if(!next||!template)return;
@@ -125,7 +199,7 @@ async function init(){
   const response=await supabase.from('script_pages').select('id,category,title,content').eq('dr_id',dr.id).eq('user_id',user.id);
   if(response.error)throw response.error;pages=response.data||[];await ensurePages();navigation();await selectPage('About Me');
 }
-for(const [button,type] of [['add-text','paragraph'],['add-heading','heading'],['add-quote','quote'],['add-checklist','checklist'],['add-divider','divider']])$(button).onclick=()=>add(type);
+for(const [button,type] of [['add-text','paragraph'],['add-heading','heading'],['add-quote','quote'],['add-checklist','checklist'],['add-divider','divider'],['add-image','image'],['add-gallery','gallery'],['add-columns','columns'],['add-profile','profile']])$(button).onclick=()=>add(type);
 $('add-synced').onclick=async()=>{
   if(!(await loadSynced()))return;
   if(!synced.length){$('sync-error').textContent='Create a synced block in the library first.';}
