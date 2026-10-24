@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f5ef">
+  <title>My Realities | Shifting Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="brand" href="dashboard.html"><span class="brand-icon">✧</span><span><strong>Shifting Studio</strong><small>YOUR CREATIVE SANCTUARY</small></span></a>
+      <div class="nav-label">WORKSPACE</div>
+      <a class="nav-link selected" href="dashboard.html">▦ <span>My Realities</span></a>
+      <span class="nav-link disabled" title="Coming soon">✎ <span>My Journal <em>Soon</em></span></span>
+      <span class="nav-link disabled" title="Coming soon">◇ <span>Templates <em>Soon</em></span></span>
+      <div class="sidebar-bottom">✦ A little space for every world you imagine.</div>
+    </aside>
+
+    <div class="app-main">
+      <header class="topbar"><span class="breadcrumb">My workspace <span>/</span> <b>My Realities</b></span><div class="account"><span id="account-email"></span><button class="ghost" id="logout" type="button">Log out</button></div></header>
+      <main class="content">
+        <div class="intro"><div class="eyebrow">✦ YOUR PERSONAL UNIVERSE</div><h1>Every world begins here.</h1><p>A beautiful home for the stories, people, places, and little details that make each reality yours.</p></div>
+        <div class="heading-row"><div><h2>My Desired Realities</h2><p id="count">Your treasured worlds</p></div><button class="primary" id="add-dr" type="button">＋ Create new DR</button></div>
+        <div class="controls"><label class="search"><span>⌕</span><input id="search" type="search" placeholder="Search your realities…" aria-label="Search realities"></label><select id="sort" aria-label="Sort realities"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="az">Name A–Z</option><option value="za">Name Z–A</option></select></div>
+        <p id="notice" class="notice" role="status" aria-live="polite"></p>
+        <div id="reality-grid" class="reality-grid"></div>
+      </main>
+    </div>
+  </div>
+
+  <dialog id="editor-dialog" class="modal"><form id="dr-form"><div class="eyebrow">✦ YOUR NEXT CHAPTER</div><h2 id="dialog-title">Create a reality</h2><label>Reality name<input id="dr-title" maxlength="120" required placeholder="e.g. The Chronicles of Narnia"></label><label>Description<textarea id="dr-description" rows="3" maxlength="1000" placeholder="A few words about your world..."></textarea></label><label>Theme<select id="dr-theme"><option value="sage">Enchanted sage</option><option value="rose">Romantic rose</option><option value="dusk">Midnight dusk</option><option value="gold">Vintage gold</option></select></label><div class="modal-actions"><button class="ghost" id="cancel" type="button">Cancel</button><button class="primary" id="save-dr" type="submit">Save reality</button></div><p id="form-error" class="error" role="alert"></p></form></dialog>
+  <script type="module" src="js/dashboard.js"></script>
+</body>
+</html>
