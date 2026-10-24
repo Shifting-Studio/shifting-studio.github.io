@@ -7,13 +7,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/script.css">
+  <link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/script.css"><link rel="stylesheet" href="css/blocks.css">
 </head>
 <body>
   <div class="script-layout">
     <aside class="script-sidebar">
       <a class="brand" href="dashboard.html"><span class="brand-icon">✧</span><span><strong>Shifting Studio</strong><small>YOUR CREATIVE SANCTUARY</small></span></a>
       <a class="back-link" href="dashboard.html">← All my realities</a>
+      <a class="back-link" href="synced-blocks.html">◇ Synced Blocks Library</a>
       <div class="sidebar-world"><span class="eyebrow">CURRENT REALITY</span><strong id="sidebar-dr">Loading...</strong></div>
       <nav id="page-navigation" aria-label="Script pages"></nav>
       <div class="sidebar-bottom">✦ Every little detail has a place here.</div>
@@ -27,8 +28,10 @@
           <div class="page-icon" id="page-icon">✧</div>
           <h2 id="page-heading">About Me</h2>
           <p id="page-hint">Write anything you would like to remember.</p>
-          <label class="editor-label" for="page-editor">MY SCRIPT</label>
-          <textarea id="page-editor" spellcheck="true" placeholder="Start writing your script here…"></textarea>
+          <div class="editor-label">MY SCRIPT</div>
+          <div class="block-toolbar"><button type="button" id="add-text">＋ Text</button><button type="button" id="add-heading">＋ Heading</button><button type="button" id="add-quote">＋ Quote</button><button type="button" id="add-checklist">＋ Checklist</button><button type="button" id="add-divider">＋ Divider</button><button type="button" id="add-synced">◇ Synced block</button></div>
+          <div id="block-list" class="block-list"></div>
+          <p class="editor-hint">Use the arrows to reorder blocks. Text and reusable synced blocks save automatically.</p>
           <div class="editor-footer"><span>✦ Your writing is saved to your account</span><span class="private-pill">♧ Private</span></div>
         </article>
         <div class="tip">Tip: Use the sidebar to move between pages. Your changes are saved before you switch.</div>
@@ -36,6 +39,7 @@
       </main>
     </div>
   </div>
-  <script type="module" src="js/script.js"></script>
+  <dialog id="sync-picker" class="modal"><div class="eyebrow">◇ CONNECT YOUR WRITING</div><h2>Insert synced block</h2><p>Select a reusable block from your library.</p><label>Synced block<select id="sync-options"></select></label><div class="modal-actions"><button class="ghost" type="button" id="cancel-sync">Cancel</button><button class="primary" type="button" id="confirm-sync">Insert block</button></div><p id="sync-error" class="error" role="alert"></p></dialog>
+  <script type="module" src="js/block-editor.js"></script>
 </body>
 </html>
