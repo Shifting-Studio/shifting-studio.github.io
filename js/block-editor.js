@@ -9,7 +9,7 @@ const groups = [
 ];
 const templates=groups.flatMap(group=>group.pages.map((p,i)=>({category:group.name,title:p[0],icon:p[1],hint:p[2],position:i})));
 const drId=new URLSearchParams(location.search).get('dr');
-let user,dr,pages=[],synced=[],current=null,blocks=[],version=0,savedVersion=0,savingPromise=null,timer=null,changing=false,uploads=0;
+let user,dr,pages=[],synced=[],current=null,blocks=[],pageSettings={type:'pageSettings',icon:'',imagePath:''},version=0,savedVersion=0,savingPromise=null,timer=null,changing=false,uploads=0,activeSubpage=null,dragIndex=null;
 const status=msg=>$('save-state').textContent=msg;
 const error=msg=>$('page-error').textContent=msg||'';
 const node=(tag,cls,text)=>{const el=document.createElement(tag);el.className=cls||'';if(text!==undefined)el.textContent=text;return el;};
@@ -19,7 +19,7 @@ function normalize(content){
   if(!Array.isArray(content))return [];
   return content.filter(b=>b&&typeof b==='object').map(b=>({
     id:typeof b.id==='string'?b.id:id(),
-    type:['paragraph','heading','quote','checklist','divider','synced','image','gallery','columns','profile'].includes(b.type)?b.type:'paragraph',
+    type:['paragraph','heading','quote','checklist','divider','synced','image','gallery','columns','profile','subpage'].includes(b.type)?b.type:'paragraph',
     text:typeof b.text==='string'?b.text:'',
     checked:!!b.checked,
     syncId:typeof b.syncId==='string'?b.syncId:null,
@@ -30,7 +30,8 @@ function normalize(content){
     right:typeof b.right==='string'?b.right:'',
     profileName:typeof b.profileName==='string'?b.profileName:'',
     profileRole:typeof b.profileRole==='string'?b.profileRole:'',
-    profileBio:typeof b.profileBio==='string'?b.profileBio:''
+    profileBio:typeof b.profileBio==='string'?b.profileBio:'',
+    subContent:typeof b.subContent==='string'?b.subContent:''
   }));
 }
 function changed(){version++;status('Unsaved changes…');clearTimeout(timer);timer=setTimeout(savePage,750);}
@@ -38,7 +39,7 @@ async function savePage(){
   clearTimeout(timer);
   if(!current||version===savedVersion)return true;
   if(savingPromise){await savingPromise;if(version===savedVersion)return true;}
-  const page=current,v=version,content=structuredClone(blocks);
+  const page=current,v=version,content=structuredClone([pageSettings,...blocks]);
   status('Saving…');
   savingPromise=supabase.from('script_pages').update({content,updated_at:new Date().toISOString()})
     .eq('id',page.id).eq('user_id',user.id).select('id');
@@ -62,6 +63,12 @@ async function signedImage(path,img){
   if(result.error){img.alt='Image unavailable';return;}
   if(img.isConnected)img.src=result.data.signedUrl;
 }
+function renderCover(){
+  $('page-icon').textContent=pageSettings.icon||templates.find(t=>t.title===current?.title)?.icon||'✧';
+  const box=$('page-cover');box.replaceChildren();box.hidden=!pageSettings.imagePath;
+  if(pageSettings.imagePath)box.append(photo(pageSettings.imagePath,'page-cover-photo'));
+  $('remove-cover').hidden=!pageSettings.imagePath;
+}
 function photo(path,cls='media-preview'){
   const img=node('img',cls);img.alt='Script image';img.loading='lazy';signedImage(path,img);return img;
 }
@@ -81,6 +88,7 @@ async function uploadImages(files,block,multiple=false){
       changed();
     }
     renderBlocks();
+    if(block===pageSettings)renderCover();
   }catch(e){error(`Image upload failed: ${e.message}. Make sure you've run the Storage SQL.`);}
   finally{uploads--;if(version!==savedVersion)await savePage();else status('✓ All changes saved');}
 }
@@ -98,7 +106,14 @@ function renderBlocks(){
   if(!blocks.length){list.append(node('div','empty-blocks','Start with “＋ Text” or add a synced block from your library.'));return;}
   blocks.forEach((block,index)=>{
     const item=node('div',`editor-block block-${block.type}`),top=node('div','block-topline'),actions=node('div','block-actions');
-    top.append(node('span','block-type',block.type==='synced'?'◇ SYNCED BLOCK':block.type));
+    const title=node('span','block-type',block.type==='synced'?'◇ SYNCED BLOCK':block.type);
+    const handle=node('span','drag-handle','⠿');handle.draggable=true;handle.title='Drag to reorder';
+    handle.addEventListener('dragstart',event=>{dragIndex=index;event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain',String(index));});
+    handle.addEventListener('dragend',()=>{dragIndex=null;document.querySelectorAll('.drag-target').forEach(x=>x.classList.remove('drag-target'));});
+    top.append(handle,title);
+    item.addEventListener('dragover',event=>{if(dragIndex===null)return;event.preventDefault();item.classList.add('drag-target');});
+    item.addEventListener('dragleave',()=>item.classList.remove('drag-target'));
+    item.addEventListener('drop',event=>{event.preventDefault();item.classList.remove('drag-target');if(dragIndex===null)return;const from=dragIndex;dragIndex=null;if(from!==index){const [moved]=blocks.splice(from,1);blocks.splice(index,0,moved);changed();renderBlocks();}});
     actions.append(makeAction('↑',()=>move(index,-1),'Move up'),makeAction('↓',()=>move(index,1),'Move down'),makeAction('×',()=>remove(index),'Remove block'));
     top.append(actions);item.append(top);
     if(block.type==='synced'){
@@ -137,6 +152,10 @@ function renderBlocks(){
       const bio=node('textarea','profile-field profile-bio');bio.placeholder='Biography, personality, important details…';bio.value=block.profileBio;
       bio.addEventListener('input',()=>{block.profileBio=bio.value;changed();});info.append(bio);
       profile.append(portrait,info);item.append(profile);
+    }else if(block.type==='subpage'){
+      item.append(field(block.text,'Subpage title',v=>block.text=v,'profile-field profile-name'));
+      item.append(node('p','sync-caption',(block.subContent||'').slice(0,135)||'A nested page waiting for your words…'));
+      item.append(makeAction('Open subpage →',()=>openSubpage(block),'Edit nested page'));
     }else{
       if(block.type==='checklist'){
         const checked=node('input');checked.type='checkbox';checked.checked=block.checked;checked.setAttribute('aria-label','Checklist completed');
@@ -150,9 +169,31 @@ function renderBlocks(){
     list.append(item);
   });
 }
-function add(type,syncId=null){blocks.push({id:id(),type,text:'',checked:false,syncId,imagePath:'',galleryPaths:[],caption:'',left:'',right:'',profileName:'',profileRole:'',profileBio:''});changed();renderBlocks();}
+function blank(type,syncId=null){return {id:id(),type,text:'',checked:false,syncId,imagePath:'',galleryPaths:[],caption:'',left:'',right:'',profileName:'',profileRole:'',profileBio:'',subContent:''};}
+function add(type,syncId=null){blocks.push(blank(type,syncId));changed();renderBlocks();}
 function move(i,delta){const target=i+delta;if(target<0||target>=blocks.length)return;[blocks[i],blocks[target]]=[blocks[target],blocks[i]];changed();renderBlocks();}
 function remove(i){blocks.splice(i,1);changed();renderBlocks();}
+function openSubpage(block){
+  activeSubpage=block;
+  $('subpage-heading').textContent=block.text||'Untitled subpage';
+  $('subpage-title').value=block.text||'';
+  $('subpage-content').value=block.subContent||'';
+  $('subpage-dialog').showModal();
+}
+function addTemplate(kind){
+  const heading=blank('heading');heading.text=kind==='character'?'Character profile':kind==='home'?'My dream home':'Wardrobe inspiration';
+  if(kind==='character'){
+    const profile=blank('profile'),quote=blank('quote');quote.text='Favorite memories, relationship details, and little things to remember…';
+    blocks.push(heading,profile,quote);
+  }else if(kind==='home'){
+    const gallery=blank('gallery'),columns=blank('columns');columns.left='Location and exterior';columns.right='Rooms and favorite details';
+    blocks.push(heading,gallery,columns);
+  }else{
+    const gallery=blank('gallery'),columns=blank('columns');columns.left='Everyday outfits';columns.right='Special occasions';
+    blocks.push(heading,gallery,columns);
+  }
+  changed();renderBlocks();
+}
 async function selectPage(title){
   if(changing)return;changing=true;
   try{
@@ -160,11 +201,15 @@ async function selectPage(title){
     if(current&&!(await flush()))return;
     const next=pages.find(page=>page.title===title),template=templates.find(t=>t.title===title);
     if(!next||!template)return;
-    current=next;blocks=normalize(next.content);version=savedVersion=0;clearTimeout(timer);
+    current=next;
+    const meta=Array.isArray(next.content)?next.content.find(b=>b?.type==='pageSettings'):null;
+    pageSettings={type:'pageSettings',icon:typeof meta?.icon==='string'?meta.icon:'',imagePath:typeof meta?.imagePath==='string'?meta.imagePath:''};
+    blocks=normalize(Array.isArray(next.content)?next.content.filter(b=>b?.type!=='pageSettings'):next.content);
+    version=savedVersion=0;clearTimeout(timer);
     $('page-category').textContent=template.category;$('page-icon').textContent=template.icon;
     $('page-heading').textContent=title;$('page-hint').textContent=template.hint;
     document.title=`${title} | ${dr.title} — Shifting Studio`;
-    await loadSynced();renderBlocks();status('✓ All changes saved');
+    await loadSynced();renderCover();renderBlocks();status('✓ All changes saved');
     document.querySelectorAll('.page-link').forEach(b=>b.classList.toggle('active',b.dataset.page===title));
     document.querySelector('.script-sidebar').classList.remove('open');
   }finally{changing=false;}
@@ -199,7 +244,20 @@ async function init(){
   const response=await supabase.from('script_pages').select('id,category,title,content').eq('dr_id',dr.id).eq('user_id',user.id);
   if(response.error)throw response.error;pages=response.data||[];await ensurePages();navigation();await selectPage('About Me');
 }
-for(const [button,type] of [['add-text','paragraph'],['add-heading','heading'],['add-quote','quote'],['add-checklist','checklist'],['add-divider','divider'],['add-image','image'],['add-gallery','gallery'],['add-columns','columns'],['add-profile','profile']])$(button).onclick=()=>add(type);
+for(const [button,type] of [['add-text','paragraph'],['add-heading','heading'],['add-quote','quote'],['add-checklist','checklist'],['add-divider','divider'],['add-image','image'],['add-gallery','gallery'],['add-columns','columns'],['add-profile','profile'],['add-subpage','subpage']])$(button).onclick=()=>add(type);
+document.querySelectorAll('[data-template]').forEach(btn=>btn.onclick=()=>addTemplate(btn.dataset.template));
+$('change-icon').onclick=()=>{
+  if(!current)return;
+  const result=prompt('Enter an emoji or short symbol for this page:',pageSettings.icon||'✧');
+  if(result===null)return;
+  pageSettings.icon=result.slice(0,12);changed();renderCover();
+};
+$('cover-input').onchange=event=>{if(current&&event.target.files.length)uploadImages(event.target.files,pageSettings);event.target.value='';};
+$('remove-cover').onclick=()=>{if(!current)return;pageSettings.imagePath='';changed();renderCover();};
+$('subpage-title').oninput=()=>{if(!activeSubpage)return;activeSubpage.text=$('subpage-title').value;changed();$('subpage-heading').textContent=activeSubpage.text||'Untitled subpage';};
+$('subpage-content').oninput=()=>{if(!activeSubpage)return;activeSubpage.subContent=$('subpage-content').value;changed();};
+$('close-subpage').onclick=()=>{$('subpage-dialog').close();activeSubpage=null;renderBlocks();savePage();};
+$('subpage-dialog').addEventListener('close',()=>{activeSubpage=null;renderBlocks();});
 $('add-synced').onclick=async()=>{
   if(!(await loadSynced()))return;
   if(!synced.length){$('sync-error').textContent='Create a synced block in the library first.';}

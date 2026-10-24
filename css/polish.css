@@ -24,3 +24,18 @@ body{background:radial-gradient(ellipse at 90% 4%,#eaf0e5 0,transparent 42%),#f7
 .two-column-block{display:grid;grid-template-columns:1fr 1fr;gap:14px}.two-column-block textarea{border:1px solid #e2eadf;border-radius:10px;padding:13px;min-height:145px;width:100%;resize:vertical}
 .profile-block{display:grid;grid-template-columns:130px minmax(0,1fr);gap:22px;align-items:start}.profile-portrait{width:130px;height:160px;object-fit:cover;border-radius:13px;background:#e9eee5}.profile-block .profile-name{font:500 25px 'Playfair Display',serif}.profile-block .profile-bio{min-height:105px;resize:vertical}
 @media(max-width:650px){.media-gallery{grid-template-columns:repeat(2,minmax(0,1fr))}.two-column-block{grid-template-columns:1fr}.profile-block{grid-template-columns:1fr}.profile-portrait{width:100%;height:200px}}
+.page-cover{margin:18px -22px 20px;border-radius:16px;overflow:hidden;height:230px;background:#e1eadc}
+.page-cover[hidden]{display:none}.page-cover-photo{width:100%;height:100%;object-fit:cover}
+.page-customize{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:15px 0 6px}
+.page-customize button,.cover-upload{border:1px solid #d9e5d7;background:#f3f7f0;padding:8px 12px;border-radius:9px;color:#617e66;font-size:11px;cursor:pointer}
+.cover-upload input{display:none}.page-customize #remove-cover{background:transparent;border-color:transparent;color:#9a9990}
+.template-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 0 16px;margin-top:-8px;color:#859a85;font-size:11px}
+.template-bar>span{font-weight:700;letter-spacing:1px;margin-right:6px}.template-bar button{border:1px solid #eadfcf;background:#f9f4e9;color:#827058;border-radius:20px;font-size:11px;padding:8px 12px;cursor:pointer}
+.template-bar button:hover{background:#f3e7d3}
+.block-topline{justify-content:flex-start;gap:9px}.block-topline .block-actions{margin-left:auto}
+.drag-handle{cursor:grab;font-size:23px;line-height:1;color:#a9bbaa;user-select:none;touch-action:none}.drag-handle:active{cursor:grabbing}
+.editor-block.drag-target{border-color:#72987a;background:#f0f7ef;box-shadow:0 0 0 2px #b6d1b8}
+.block-subpage{background:#f8f7f0;border-color:#e8e4d8}.block-subpage .profile-name{font-size:21px}.block-subpage .sync-caption{white-space:pre-wrap}
+.block-subpage>button{border:1px solid #dce5d9;border-radius:9px;padding:10px 14px;color:#537159;background:#edf3ea;cursor:pointer}
+#subpage-dialog{width:min(720px,calc(100% - 20px))}#subpage-dialog textarea{min-height:300px;line-height:1.8}
+@media(max-width:650px){.page-cover{height:170px;margin-left:0;margin-right:0}.template-bar>span{width:100%}}

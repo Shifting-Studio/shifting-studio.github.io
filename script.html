@@ -25,13 +25,16 @@
         <section class="script-banner"><span class="eyebrow">✦ MY DESIRED REALITY</span><h1 id="dr-heading">My Reality</h1><p id="dr-description">All the details of your imagined world, beautifully organized.</p></section>
         <article class="writing-card">
           <div class="page-overline" id="page-category">PERSONAL</div>
+          <div class="page-cover" id="page-cover" hidden></div>
+          <div class="page-customize"><button type="button" id="change-icon">✧ Change icon</button><label class="cover-upload">▧ Add/change cover<input id="cover-input" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label><button type="button" id="remove-cover">Remove cover</button></div>
           <div class="page-icon" id="page-icon">✧</div>
           <h2 id="page-heading">About Me</h2>
           <p id="page-hint">Write anything you would like to remember.</p>
           <div class="editor-label">MY SCRIPT</div>
-          <div class="block-toolbar"><button type="button" id="add-text">＋ Text</button><button type="button" id="add-heading">＋ Heading</button><button type="button" id="add-quote">＋ Quote</button><button type="button" id="add-checklist">＋ Checklist</button><button type="button" id="add-divider">＋ Divider</button><button type="button" id="add-image">▧ Image</button><button type="button" id="add-gallery">▦ Gallery</button><button type="button" id="add-columns">☷ Columns</button><button type="button" id="add-profile">♡ Character</button><button type="button" id="add-synced">◇ Synced block</button></div>
+          <div class="block-toolbar"><button type="button" id="add-text">＋ Text</button><button type="button" id="add-heading">＋ Heading</button><button type="button" id="add-quote">＋ Quote</button><button type="button" id="add-checklist">＋ Checklist</button><button type="button" id="add-divider">＋ Divider</button><button type="button" id="add-image">▧ Image</button><button type="button" id="add-gallery">▦ Gallery</button><button type="button" id="add-columns">☷ Columns</button><button type="button" id="add-profile">♡ Character</button><button type="button" id="add-subpage">▤ Subpage</button><button type="button" id="add-synced">◇ Synced block</button></div>
+          <div class="template-bar"><span>✦ Quick layouts</span><button type="button" data-template="character">Character profile</button><button type="button" data-template="home">Home journal</button><button type="button" data-template="wardrobe">Wardrobe gallery</button></div>
           <div id="block-list" class="block-list"></div>
-          <p class="editor-hint">Use the arrows to reorder blocks. Text and reusable synced blocks save automatically.</p>
+          <p class="editor-hint">Drag blocks using their handle or use the arrows. Changes save automatically.</p>
           <div class="editor-footer"><span>✦ Your writing is saved to your account</span><span class="private-pill">♧ Private</span></div>
         </article>
         <div class="tip">Tip: Use the sidebar to move between pages. Your changes are saved before you switch.</div>
@@ -40,6 +43,7 @@
     </div>
   </div>
   <dialog id="sync-picker" class="modal"><div class="eyebrow">◇ CONNECT YOUR WRITING</div><h2>Insert synced block</h2><p>Select a reusable block from your library.</p><label>Synced block<select id="sync-options"></select></label><div class="modal-actions"><button class="ghost" type="button" id="cancel-sync">Cancel</button><button class="primary" type="button" id="confirm-sync">Insert block</button></div><p id="sync-error" class="error" role="alert"></p></dialog>
+  <dialog id="subpage-dialog" class="modal"><div class="eyebrow">▤ NESTED PAGE</div><h2 id="subpage-heading">Subpage</h2><label>Page title<input id="subpage-title" maxlength="120"></label><label>Page contents<textarea id="subpage-content" rows="12" placeholder="Write your subpage here..."></textarea></label><div class="modal-actions"><button class="primary" id="close-subpage" type="button">Done</button></div></dialog>
   <script type="module" src="js/block-editor.js"></script>
 </body>
 </html>
