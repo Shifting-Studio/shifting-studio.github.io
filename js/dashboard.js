@@ -30,7 +30,7 @@ function render() {
     body.append(element('h3', '', dr.title), element('p', '', dr.description || 'A world waiting to be written.'));
     const foot = element('div', 'card-footer');
     foot.append(element('span', '', '✦ Private reality'));
-    const open = element('a', 'text-button', 'Open script ↗');
+    const open = element('a', 'open-script-button', '✎ Open Script →');
     open.href = `script.html?dr=${encodeURIComponent(dr.id)}`;
     foot.append(open);
     const edit = element('button', 'text-button', 'Edit details →');
@@ -38,6 +38,10 @@ function render() {
     edit.addEventListener('click', () => openDialog(dr));
     foot.append(edit); body.append(foot);
     card.append(element('div', `card-cover ${theme}`, '✧'), body);
+    card.classList.add('card-clickable');
+    card.addEventListener('click', event => {
+      if (!event.target.closest('a,button')) window.location.href = open.href;
+    });
     grid.append(card);
   }
   if (!query) {
