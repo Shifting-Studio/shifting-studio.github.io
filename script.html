@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f6f7f2">
+  <title>My Script | Shifting Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/script.css">
+</head>
+<body>
+  <div class="script-layout">
+    <aside class="script-sidebar">
+      <a class="brand" href="dashboard.html"><span class="brand-icon">✧</span><span><strong>Shifting Studio</strong><small>YOUR CREATIVE SANCTUARY</small></span></a>
+      <a class="back-link" href="dashboard.html">← All my realities</a>
+      <div class="sidebar-world"><span class="eyebrow">CURRENT REALITY</span><strong id="sidebar-dr">Loading...</strong></div>
+      <nav id="page-navigation" aria-label="Script pages"></nav>
+      <div class="sidebar-bottom">✦ Every little detail has a place here.</div>
+    </aside>
+    <div class="script-main">
+      <header class="topbar"><button class="mobile-pages" id="pages-toggle" type="button">☰ Pages</button><div class="breadcrumb"><a href="dashboard.html">My Realities</a> <span>/</span> <b id="breadcrumb-world">Script</b></div><div class="save-indicator" id="save-state" role="status" aria-live="polite">Loading...</div></header>
+      <main class="script-content">
+        <section class="script-banner"><span class="eyebrow">✦ MY DESIRED REALITY</span><h1 id="dr-heading">My Reality</h1><p id="dr-description">All the details of your imagined world, beautifully organized.</p></section>
+        <article class="writing-card">
+          <div class="page-overline" id="page-category">PERSONAL</div>
+          <div class="page-icon" id="page-icon">✧</div>
+          <h2 id="page-heading">About Me</h2>
+          <p id="page-hint">Write anything you would like to remember.</p>
+          <label class="editor-label" for="page-editor">MY SCRIPT</label>
+          <textarea id="page-editor" spellcheck="true" placeholder="Start writing your script here…"></textarea>
+          <div class="editor-footer"><span>✦ Your writing is saved to your account</span><span class="private-pill">♧ Private</span></div>
+        </article>
+        <div class="tip">Tip: Use the sidebar to move between pages. Your changes are saved before you switch.</div>
+        <p id="page-error" class="page-error" role="alert"></p>
+      </main>
+    </div>
+  </div>
+  <script type="module" src="js/script.js"></script>
+</body>
+</html>

@@ -30,6 +30,9 @@ function render() {
     body.append(element('h3', '', dr.title), element('p', '', dr.description || 'A world waiting to be written.'));
     const foot = element('div', 'card-footer');
     foot.append(element('span', '', '✦ Private reality'));
+    const open = element('a', 'text-button', 'Open script ↗');
+    open.href = `script.html?dr=${encodeURIComponent(dr.id)}`;
+    foot.append(open);
     const edit = element('button', 'text-button', 'Edit details →');
     edit.type = 'button';
     edit.addEventListener('click', () => openDialog(dr));
