@@ -376,3 +376,44 @@ body.focus-writing .script-main{min-width:0}
 .theme-sample-card{background:var(--theme-paper,#fffefa);border:1px solid var(--theme-border,#e2e8df);margin:0 14px;border-radius:9px;padding:11px 14px}
 .theme-sample-card strong{display:block;font:500 17px 'Playfair Display',serif;color:var(--theme-ink,#283f33);margin:5px 0}
 @media(max-width:540px){.theme-sample{grid-template-columns:75px minmax(0,1fr)}.theme-sample-sidebar{padding:13px 8px;gap:10px}.theme-sample-sidebar strong{font-size:10px}.theme-sample-sidebar span{font-size:8px}.theme-sample-banner{margin:9px;padding:10px}.theme-sample-card{margin:0 9px;padding:9px}.theme-sample-banner strong{font-size:18px}}
+/* The reading-first workspace: a quiet document, with tools only when needed. */
+.script-layout{grid-template-columns:232px minmax(0,1fr)!important}
+.script-sidebar{padding:22px 13px!important}
+.script-sidebar .brand{padding:4px 8px 15px;margin-bottom:7px!important}
+.script-sidebar .back-link{margin:1px 0;padding:10px 12px;border-radius:9px}
+.script-sidebar .sidebar-world{margin:17px 5px 20px;padding:13px 14px;border-radius:12px}
+.script-sidebar .group-toggle{padding:12px 12px 7px;letter-spacing:.08em}
+.script-sidebar .page-link{padding:9px 12px 9px 17px;border-radius:9px;font-size:12px}
+.script-main .topbar{min-height:60px;padding:0 clamp(20px,4vw,60px)!important}
+.script-main .script-content{width:min(100%,940px)!important;max-width:940px!important;padding:32px clamp(19px,4vw,56px) 75px!important;margin-inline:auto!important}
+.script-banner{padding:18px 25px!important;margin-bottom:18px!important;border-radius:13px!important;box-shadow:none!important}
+.script-banner:after{display:none!important}
+.script-banner .eyebrow{font-size:9px!important;letter-spacing:.16em}
+.script-banner h1{font-size:clamp(24px,2.8vw,32px)!important;margin:5px 0 2px!important;line-height:1.2!important}
+.script-banner p{font-size:11px!important;line-height:1.4!important;margin:0!important}
+.script-content .writing-card{padding:clamp(26px,5vw,56px)!important;border-radius:16px!important;box-shadow:0 16px 48px #132e2016!important;min-height:65vh!important}
+.writing-card .page-overline{font-size:10px;letter-spacing:.16em;margin-bottom:14px}
+.writing-card .page-icon{font-size:26px!important;margin:9px 0 7px!important}
+.writing-card #page-heading{margin:0 0 7px!important;font-size:clamp(30px,3.5vw,39px)!important;line-height:1.17!important}
+.writing-card #page-hint{margin:0 0 23px!important;font-size:12px!important;line-height:1.6!important}
+.writing-card .editor-label{display:none}
+.writing-card .page-appearance{margin:0 0 18px!important}
+.writing-card .page-appearance summary{font-size:11px!important}
+.writing-card .editor-command-center{border:0!important;border-top:1px solid var(--theme-border,#e6ece5)!important;border-bottom:1px solid var(--theme-border,#e6ece5)!important;border-radius:0!important;padding:12px 0!important;margin:14px 0 25px!important;background:transparent!important;box-shadow:none!important}
+.writing-card .block-toolbar{display:flex!important;align-items:center!important;gap:7px!important;flex-wrap:wrap!important}
+.writing-card .block-toolbar .write-first{background:var(--theme-accent,#456d50)!important;color:var(--theme-paper,#fff)!important;border:1px solid transparent!important;padding:10px 15px!important;border-radius:10px!important;font-weight:600!important}
+.writing-card .block-toolbar .extra-tools summary,.writing-card .block-toolbar .workspace-more summary{background:transparent!important;border:1px solid var(--theme-border,#dce5d9)!important;color:var(--theme-ink,#36523e)!important;cursor:pointer;padding:9px 13px!important;border-radius:10px!important;font-size:12px!important;line-height:1.5;list-style:none}
+.writing-card .block-toolbar summary::-webkit-details-marker{display:none}
+.writing-card .block-toolbar .extra-tools,.writing-card .block-toolbar .workspace-more{position:relative}
+.workspace-more{margin-left:auto}
+.workspace-more-menu{position:absolute;z-index:15;top:calc(100% + 8px);right:0;width:min(270px,80vw);padding:11px;background:var(--theme-paper,#fff);color:var(--theme-ink,#2c4838);border:1px solid var(--theme-border,#dce5d9);border-radius:12px;box-shadow:0 15px 36px #19342129}
+.workspace-more-menu button{display:block;width:100%;text-align:left!important;border:0!important;background:transparent!important;color:inherit!important;padding:11px!important;border-radius:7px!important;font-size:12px!important}
+.workspace-more-menu button:hover{background:var(--theme-soft,#edf3e9)!important}
+.workspace-more-menu p{font-size:11px!important;line-height:1.4;margin:7px 9px 2px!important;color:var(--theme-muted,#819183)}
+.extra-tools-content{z-index:15!important;box-shadow:0 15px 36px #19342129!important}
+.writing-card .layout-presets{margin:0 0 16px!important}
+.writing-card .layout-presets summary{font-size:11px!important}
+.writing-card .editor-hint{font-size:11px!important;line-height:1.5;color:var(--theme-muted,#7b8d80);margin-top:25px!important}
+.script-content>.tip{display:none!important}
+@media(max-width:950px){.script-layout{grid-template-columns:210px minmax(0,1fr)!important}}
+@media(max-width:700px){.script-layout{grid-template-columns:1fr!important}.script-sidebar{width:min(85vw,300px)!important}.script-main .script-content{padding:20px 12px 50px!important}.script-content .writing-card{padding:23px 19px!important}.script-banner{padding:15px 20px!important}.workspace-more{margin-left:0}}
