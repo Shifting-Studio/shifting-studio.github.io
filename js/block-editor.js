@@ -119,8 +119,8 @@ function applyTypography(){
   if(title){title.style.fontFamily=`"${settings.headingFont}",Georgia,serif`;title.style.fontSize=`${settings.headingSize}px`;}
 }
 function applyTheme(){
-  const theme=safeTheme(pageSettings.theme),card=document.querySelector('.writing-card');
-  for(const [key,value] of Object.entries(theme))if(key!=='name')card.style.setProperty(`--theme-${key}`,value);
+  const theme=safeTheme(pageSettings.theme),workspace=document.querySelector('.script-layout');
+  for(const [key,value] of Object.entries(theme))if(key!=='name')workspace.style.setProperty(`--theme-${key}`,value);
   const preview=document.querySelector('.preview-paper');
   if(preview){preview.style.color=theme.ink;preview.style.borderColor=theme.border;}
 }
@@ -727,19 +727,27 @@ const openThemes=node('button','theme-open','◐ Script themes');openThemes.type
 document.querySelector('.page-customize').append(openThemes);
 const themeDialog=document.createElement('dialog');themeDialog.className='modal theme-dialog';
 themeDialog.append(node('div','eyebrow','✦ SCRIPT THEME STUDIO'),node('h2','','Make this script yours'),
-  node('p','theme-help','Choose a complete writing-card theme or design your own colors. Apply it to all 15 pages for a matching look.'));
+  node('p','theme-help','Style the entire workspace—sidebar, header, reality banner, and writing cards. Apply it to all 15 pages for a matching look.'));
 const themePresetGrid=node('div','theme-preset-grid');themeDialog.append(themePresetGrid);
 const themeForm=node('div','theme-form');
 const themeNameLabel=node('label','','Theme name'),themeName=node('input');themeName.id='theme-name';themeName.maxLength=60;themeNameLabel.append(themeName);themeForm.append(themeNameLabel);
-const themeFields=[['paper','Writing card'],['ink','Main text'],['muted','Subtle text'],['accent','Accent'],['border','Borders'],['soft','Block backgrounds']];
+const themeFields=[['paper','Cards & header'],['ink','Main text'],['muted','Subtle text'],['accent','Accent'],['border','Borders'],['soft','Sidebar & blocks']];
 const themeControls=node('div','theme-color-grid');
 for(const [key,title] of themeFields){
   const label=node('label','',title),input=node('input');input.type='color';input.id=`theme-${key}`;label.append(input);themeControls.append(label);
 }
 themeForm.append(themeControls);themeDialog.append(themeForm);
 const themePreview=node('div','theme-sample');themePreview.id='theme-sample';
-themePreview.append(node('span','theme-sample-caption','✧ YOUR SCRIPT'),node('strong','','A Beautiful Chapter'),
-  node('p','','A little world, written in your own style.'));
+const previewSidebar=node('div','theme-sample-sidebar');
+previewSidebar.append(node('strong','','✧ Shifting Studio'),node('span','','◈ About Me'),node('span','','♡ Relationships'));
+const previewMain=node('div','theme-sample-main');
+const previewTopbar=node('div','theme-sample-topbar','My Realities / Elvis Presley');
+const previewBanner=node('div','theme-sample-banner');
+previewBanner.append(node('span','theme-sample-caption','✦ MY DESIRED REALITY'),node('strong','','Elvis Presley'),
+  node('p','','All the details of your imagined world, beautifully organized.'));
+const previewCard=node('div','theme-sample-card');
+previewCard.append(node('span','theme-sample-caption','PERSONAL'),node('strong','','About Me'),node('p','','A little world, written in your own style.'));
+previewMain.append(previewTopbar,previewBanner,previewCard);themePreview.append(previewSidebar,previewMain);
 themeDialog.append(themePreview);
 const themeStatus=node('p','theme-message');themeStatus.id='theme-status';themeDialog.append(themeStatus);
 const themeActions=node('div','modal-actions'),themeClose=node('button','ghost','Done'),themeAll=node('button','primary','Apply to all 15 pages');
@@ -747,10 +755,8 @@ themeClose.type=themeAll.type='button';themeActions.append(themeClose,themeAll);
 function updateThemeControls(){
   const theme=safeTheme(pageSettings.theme);themeName.value=theme.name;
   for(const [key] of themeFields)$(`theme-${key}`).value=theme[key];
-  themePreview.style.background=theme.paper;themePreview.style.borderColor=theme.border;themePreview.style.color=theme.ink;
-  themePreview.querySelector('p').style.color=theme.muted;
-  themePreview.querySelector('strong').style.color=theme.ink;
-  themePreview.querySelector('span').style.color=theme.accent;
+  themePreview.style.background=theme.soft;themePreview.style.borderColor=theme.border;themePreview.style.color=theme.ink;
+  for(const [key,value] of Object.entries(theme))if(key!=='name')themePreview.style.setProperty(`--theme-${key}`,value);
 }
 function changeTheme(){
   pageSettings.theme=safeTheme({name:themeName.value||'Custom Theme',...Object.fromEntries(themeFields.map(([key])=>[key,$(`theme-${key}`).value]))});
