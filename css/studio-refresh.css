@@ -231,6 +231,41 @@ body.focus-writing .script-main{min-width:0}
 .typography-value{display:block;font-size:11px;color:#91a394;margin-top:5px}
 .typography-preview{margin:20px 0;padding:23px 16px;border:1px solid #dfe9dc;border-radius:12px;background:#f8faf5;color:#345541;text-align:center;line-height:1.3;overflow-wrap:anywhere}
 .typography-message{font-size:11px;line-height:1.6;min-height:16px;color:#738e78;margin:13px 0 0}
+/* Theme palette is scoped to the active script page; not the rest of the account. */
+.writing-card{color:var(--theme-ink,#283f33)!important;border-color:var(--theme-border,#e2e8df)!important}
+.writing-card #page-heading,.writing-card .block-heading .rich-editor,.writing-card .rich-editor,.writing-card .block-input,.writing-card .template-field-answer,.writing-card .profile-field,.writing-card .block-field,.writing-card .editor-block{color:var(--theme-ink,#283f33)!important}
+.writing-card .editor-block{background:var(--theme-soft,#f8faf6)!important;border-color:var(--theme-border,#e2e8df)!important}
+.writing-card .block-field,.writing-card .block-paragraph,.writing-card .block-heading{background:var(--theme-paper,#fffefa)!important}
+.writing-card .template-field-answer,.writing-card .editor-command-center,.writing-card .selection-bar,.writing-card .page-customize,.writing-card .page-icon{background:var(--theme-soft,#f8faf6)!important;border-color:var(--theme-border,#e2e8df)!important}
+.writing-card .block-toolbar button,.writing-card .block-actions button,.writing-card .page-customize button,.writing-card .page-customize .cover-upload,.writing-card .extra-tools summary,.writing-card .template-bar button{background:var(--theme-soft,#f8faf6)!important;border-color:var(--theme-border,#e2e8df)!important;color:var(--theme-ink,#283f33)!important}
+.writing-card .block-toolbar .write-first{background:var(--theme-accent,#426b50)!important;color:var(--theme-paper,#fffefa)!important;border-color:var(--theme-accent,#426b50)!important}
+.writing-card .block-toolbar .add-synced-tool{background:var(--theme-soft,#f8faf6)!important;color:var(--theme-accent,#426b50)!important}
+.writing-card .page-overline,.writing-card .editor-label,.writing-card .editor-hint,.writing-card #page-hint,.writing-card .editor-footer,.writing-card .block-type,.writing-card .template-field-label,.writing-card .command-heading .eyebrow,.writing-card .tool-group-label,.writing-card .command-hint,.writing-card .template-bar>span,.writing-card .sync-caption{color:var(--theme-muted,#78897b)!important}
+.writing-card .page-icon,.writing-card .template-field-label,.writing-card .text-button,.writing-card .page-customize button,.writing-card .block-actions button{color:var(--theme-accent,#426b50)!important}
+.writing-card .editor-footer,.writing-card .layout-presets,.writing-card .template-bar{border-color:var(--theme-border,#e2e8df)!important}
+.writing-card .rich-editor:empty:before{color:var(--theme-muted,#78897b)!important;opacity:.75}
+.writing-card .rich-editor:focus,.writing-card .template-field-answer:focus{background:var(--theme-soft,#f8faf6)!important}
+.writing-card .extra-tools-content{background:var(--theme-paper,#fffefa)!important;border-color:var(--theme-border,#e2e8df)!important}
+.writing-card .tool-tip,.writing-card .tool-group-label{color:var(--theme-muted,#78897b)!important}
+.theme-open{background:#eaf0e5!important;color:#436c4c!important}
+.theme-dialog{width:min(780px,calc(100% - 28px));max-height:90vh;overflow:auto}
+.theme-help{font-size:12px;color:#829583;line-height:1.7;margin:0 0 17px}
+.theme-preset-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin:15px 0 23px}
+.theme-preset{border:1px solid #dfe8dc;background:#fff;padding:6px;border-radius:11px;color:#69806c;cursor:pointer;font-size:10px;line-height:1.5;text-align:center}
+.theme-preset:hover{border-color:#7faa84;background:#f6faf4}
+.theme-preset-swatch{height:66px;border:1px solid;border-radius:7px;display:grid;place-items:center;font:500 29px 'Playfair Display',serif;margin-bottom:7px}
+.theme-form{border-top:1px solid #e4ece1;padding-top:17px}
+.theme-form>label{display:block;font-size:12px;color:#58725c;font-weight:700}
+.theme-form>label>input{display:block;width:100%;margin-top:8px}
+.theme-color-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px 17px;margin:12px 0}
+.theme-color-grid label{font-size:11px;color:#65816a;font-weight:700}
+.theme-color-grid input[type=color]{display:block;width:100%;height:37px;padding:3px;margin-top:6px;border:1px solid #e3ebe0;border-radius:9px;background:#fff;cursor:pointer}
+.theme-sample{border:1px solid;border-radius:13px;padding:24px;margin-top:18px;text-align:center;transition:background .1s}
+.theme-sample-caption{display:block;font-size:9px;font-weight:700;letter-spacing:1.5px}
+.theme-sample strong{display:block;font:500 28px 'Playfair Display',serif;margin:12px 0}
+.theme-sample p{font-size:12px;margin:0}
+.theme-message{font-size:11px;color:#759079;min-height:16px}
+@media(max-width:650px){.theme-preset-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.theme-color-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* Full-screen means one continuous text canvas, not newspaper columns. */
 .studio-lyric-layer.lyric-fill{
   columns:auto!important;column-count:initial!important;

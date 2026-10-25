@@ -18,6 +18,22 @@ const backgroundDefaults={mode:'plain',color1:'#f8f9f5',color2:'#eaf1e7',color3:
 const headingFonts=['Playfair Display','Cormorant Garamond','Cinzel','Georgia','DM Sans','Arial','Times New Roman','Great Vibes'];
 const typographyDefaults={headingFont:'Playfair Display',headingSize:26};
 const safeTypography=value=>({headingFont:headingFonts.includes(value?.headingFont)?value.headingFont:typographyDefaults.headingFont,headingSize:Math.max(16,Math.min(44,Number(value?.headingSize)||26))});
+const themeDefaults={name:'Classic Ivory',paper:'#fffefa',ink:'#283f33',muted:'#78897b',accent:'#426b50',border:'#e2e8df',soft:'#f8faf6'};
+const themePresets=[
+  {...themeDefaults},
+  {name:'Sage Library',paper:'#f4f7ef',ink:'#304d3a',muted:'#728877',accent:'#4b7858',border:'#d7e5d5',soft:'#eaf1e5'},
+  {name:'Rosewater',paper:'#fff8f8',ink:'#59424b',muted:'#987f89',accent:'#9f657d',border:'#eddde1',soft:'#faeef1'},
+  {name:'Vintage Parchment',paper:'#f6eddc',ink:'#574936',muted:'#89765e',accent:'#876b47',border:'#dfd0b7',soft:'#eee3ce'},
+  {name:'Dark Forest',paper:'#1e3027',ink:'#ecf4e8',muted:'#acc1ae',accent:'#add2a9',border:'#466353',soft:'#2b4234'},
+  {name:'Midnight Blue',paper:'#1e293b',ink:'#edf2ff',muted:'#aebcd0',accent:'#b0caff',border:'#42536e',soft:'#2b3b52'},
+  {name:'Black Velvet',paper:'#171a1a',ink:'#f6f0e4',muted:'#aca89f',accent:'#d5b78b',border:'#3c4040',soft:'#272c2c'},
+  {name:'Plum Moonlight',paper:'#332637',ink:'#f8eaf8',muted:'#c8aecb',accent:'#e4b9df',border:'#604d63',soft:'#44344a'}
+];
+const safeTheme=value=>Object.fromEntries(Object.entries(themeDefaults).map(([key,fallback])=>[key,key==='name'?String(value?.name||fallback).slice(0,60):safeColor(value?.[key],fallback)]));
+const transparentPaper=(hex,alpha)=>{
+  const value=safeColor(hex,'#fffefa');
+  return `rgba(${parseInt(value.slice(1,3),16)},${parseInt(value.slice(3,5),16)},${parseInt(value.slice(5,7),16)},${alpha})`;
+};
 const backgroundPresets=[
   {name:'Sage Morning',mode:'gradient',color1:'#edf4e8',color2:'#d4e5d3'},
   {name:'Rose Garden',mode:'gradient',color1:'#f8e9ee',color2:'#eddbda'},
@@ -102,6 +118,12 @@ function applyTypography(){
   const title=$('typography-preview');
   if(title){title.style.fontFamily=`"${settings.headingFont}",Georgia,serif`;title.style.fontSize=`${settings.headingSize}px`;}
 }
+function applyTheme(){
+  const theme=safeTheme(pageSettings.theme),card=document.querySelector('.writing-card');
+  for(const [key,value] of Object.entries(theme))if(key!=='name')card.style.setProperty(`--theme-${key}`,value);
+  const preview=document.querySelector('.preview-paper');
+  if(preview){preview.style.color=theme.ink;preview.style.borderColor=theme.border;}
+}
 function backgroundDesign(background){
   const first=background.color1,second=background.color2;
   return background.mode==='gradient'?`linear-gradient(125deg, ${first} 0%, ${second} 55%, ${background.color3||second} 100%)`:first;
@@ -151,7 +173,8 @@ async function updateBackground(){
   layer.style.filter=`blur(${Math.max(0,Math.min(20,Number(background.blur)||0))}px)`;
   layer.style.transform=background.blur>0?'scale(1.05)':'none';
   const paperAlpha=Math.max(.55,Math.min(1,Number(background.paper)/100||.96));
-  paper.style.backgroundColor=`rgba(255,254,250,${paperAlpha})`;
+  const activeTheme=safeTheme(pageSettings.theme);
+  paper.style.backgroundColor=transparentPaper(activeTheme.paper,paperAlpha);
   lyricLayer.textContent=expandLyrics(background);
   lyricStyle(lyricLayer,background);
   preview.style.backgroundImage=background.mode==='gradient'?backgroundDesign(background):'none';
@@ -159,7 +182,8 @@ async function updateBackground(){
   preview.style.backgroundPosition=background.position;
   $('bg-preview-lyric').textContent=expandLyrics(background,true);
   lyricStyle($('bg-preview-lyric'),background,true);
-  preview.querySelector('.preview-paper').style.backgroundColor=`rgba(255,254,250,${paperAlpha})`;
+  preview.querySelector('.preview-paper').style.backgroundColor=transparentPaper(activeTheme.paper,paperAlpha);
+  preview.querySelector('.preview-paper').style.color=activeTheme.ink;
   if(isImage){
     let signedUrl=backgroundUrlCache.get(background.imagePath)?.url;
     if(!signedUrl||backgroundUrlCache.get(background.imagePath).expires<Date.now()){
@@ -462,13 +486,13 @@ async function selectPage(title){
     if(!next||!template)return;
     current=next;selectedIds.clear();clearUndo();
     const meta=Array.isArray(next.content)?next.content.find(b=>b?.type==='pageSettings'):null;
-    pageSettings={type:'pageSettings',icon:typeof meta?.icon==='string'?meta.icon:'',imagePath:typeof meta?.imagePath==='string'?meta.imagePath:'',templateApplied:meta?.templateApplied===true,background:safeBackground(meta?.background),typography:safeTypography(meta?.typography)};
+    pageSettings={type:'pageSettings',icon:typeof meta?.icon==='string'?meta.icon:'',imagePath:typeof meta?.imagePath==='string'?meta.imagePath:'',templateApplied:meta?.templateApplied===true,background:safeBackground(meta?.background),typography:safeTypography(meta?.typography),theme:safeTheme(meta?.theme)};
     blocks=normalize(Array.isArray(next.content)?next.content.filter(b=>b?.type!=='pageSettings'):next.content);
     version=savedVersion=0;clearTimeout(timer);
     $('page-category').textContent=template.category;$('page-icon').textContent=template.icon;
     $('page-heading').textContent=title;$('page-hint').textContent=template.hint;
     document.title=`${title} | ${dr.title} — Shifting Studio`;
-    await loadSynced();renderCover();applyTypography();updateBackgroundForm();updateBackground();renderBlocks();status('✓ All changes saved');
+    await loadSynced();renderCover();applyTypography();applyTheme();updateBackgroundForm();updateBackground();renderBlocks();status('✓ All changes saved');
     if(!blocks.length&&!pageSettings.templateApplied)originalTemplate(title);
     document.querySelectorAll('.page-link').forEach(b=>b.classList.toggle('active',b.dataset.page===title));
     document.querySelector('.script-sidebar').classList.remove('open');
@@ -697,6 +721,72 @@ typoAll.onclick=async()=>{
     typoMessage.textContent=`Done! All ${count} pages use the same heading styles.`;
   }catch(e){typoMessage.textContent=`Some pages may not have updated. ${e.message}`;}
   finally{typoAll.disabled=false;}
+};
+// Script Theme Studio: presets, dark writing cards, and custom palette colors.
+const openThemes=node('button','theme-open','◐ Script themes');openThemes.type='button';
+document.querySelector('.page-customize').append(openThemes);
+const themeDialog=document.createElement('dialog');themeDialog.className='modal theme-dialog';
+themeDialog.append(node('div','eyebrow','✦ SCRIPT THEME STUDIO'),node('h2','','Make this script yours'),
+  node('p','theme-help','Choose a complete writing-card theme or design your own colors. Apply it to all 15 pages for a matching look.'));
+const themePresetGrid=node('div','theme-preset-grid');themeDialog.append(themePresetGrid);
+const themeForm=node('div','theme-form');
+const themeNameLabel=node('label','','Theme name'),themeName=node('input');themeName.id='theme-name';themeName.maxLength=60;themeNameLabel.append(themeName);themeForm.append(themeNameLabel);
+const themeFields=[['paper','Writing card'],['ink','Main text'],['muted','Subtle text'],['accent','Accent'],['border','Borders'],['soft','Block backgrounds']];
+const themeControls=node('div','theme-color-grid');
+for(const [key,title] of themeFields){
+  const label=node('label','',title),input=node('input');input.type='color';input.id=`theme-${key}`;label.append(input);themeControls.append(label);
+}
+themeForm.append(themeControls);themeDialog.append(themeForm);
+const themePreview=node('div','theme-sample');themePreview.id='theme-sample';
+themePreview.append(node('span','theme-sample-caption','✧ YOUR SCRIPT'),node('strong','','A Beautiful Chapter'),
+  node('p','','A little world, written in your own style.'));
+themeDialog.append(themePreview);
+const themeStatus=node('p','theme-message');themeStatus.id='theme-status';themeDialog.append(themeStatus);
+const themeActions=node('div','modal-actions'),themeClose=node('button','ghost','Done'),themeAll=node('button','primary','Apply to all 15 pages');
+themeClose.type=themeAll.type='button';themeActions.append(themeClose,themeAll);themeDialog.append(themeActions);document.body.append(themeDialog);
+function updateThemeControls(){
+  const theme=safeTheme(pageSettings.theme);themeName.value=theme.name;
+  for(const [key] of themeFields)$(`theme-${key}`).value=theme[key];
+  themePreview.style.background=theme.paper;themePreview.style.borderColor=theme.border;themePreview.style.color=theme.ink;
+  themePreview.querySelector('p').style.color=theme.muted;
+  themePreview.querySelector('strong').style.color=theme.ink;
+  themePreview.querySelector('span').style.color=theme.accent;
+}
+function changeTheme(){
+  pageSettings.theme=safeTheme({name:themeName.value||'Custom Theme',...Object.fromEntries(themeFields.map(([key])=>[key,$(`theme-${key}`).value]))});
+  applyTheme();updateBackground();updateThemeControls();changed();themeStatus.textContent='Saving your theme…';
+}
+for(const theme of themePresets){
+  const button=node('button','theme-preset'),swatch=node('div','theme-preset-swatch'),name=node('span','',theme.name);
+  button.type='button';swatch.style.background=theme.paper;swatch.style.color=theme.ink;
+  swatch.style.borderColor=theme.border;swatch.append(node('span','', 'Aa'));
+  button.append(swatch,name);button.onclick=()=>{
+    pageSettings.theme={...theme};applyTheme();updateBackground();updateThemeControls();changed();
+    themeStatus.textContent=`${theme.name} applied to this page.`;
+  };themePresetGrid.append(button);
+}
+openThemes.onclick=()=>{updateThemeControls();themeStatus.textContent='Changes to this page save automatically.';themeDialog.showModal();};
+themeName.oninput=changeTheme;for(const [key] of themeFields)$(`theme-${key}`).oninput=changeTheme;
+themeClose.onclick=()=>themeDialog.close();
+themeAll.onclick=async()=>{
+  if(!confirm('Apply this complete script theme to all 15 pages? Other page-specific card themes will be replaced. Your writing and backgrounds stay.'))return;
+  themeAll.disabled=true;themeStatus.textContent='Updating your pages…';
+  try{
+    if(!(await flush()))throw new Error('Could not save the current page.');
+    const style=structuredClone(safeTheme(pageSettings.theme));let count=0;
+    for(const page of pages){
+      if(page.id===current?.id){count++;continue;}
+      const content=Array.isArray(page.content)?structuredClone(page.content):typeof page.content==='string'?[{id:id(),type:'paragraph',text:page.content}]:[];
+      let settings=content.find(b=>b?.type==='pageSettings');
+      if(!settings){settings={type:'pageSettings',icon:'',imagePath:'',templateApplied:false};content.unshift(settings);}
+      settings.theme=style;
+      const {data,error:saveError}=await supabase.from('script_pages').update({content,updated_at:new Date().toISOString()}).eq('id',page.id).eq('user_id',user.id).select('id');
+      if(saveError||!data?.length)throw new Error(`Could not update ${page.title}: ${saveError?.message||'Permission denied'}`);
+      page.content=content;count++;
+    }
+    themeStatus.textContent=`Done! All ${count} pages use your “${style.name}” theme.`;
+  }catch(e){themeStatus.textContent=`Some pages may not have updated. ${e.message}`;}
+  finally{themeAll.disabled=false;}
 };
 // Floating text tools only activate for a real selection inside a script editor.
 const textToolbar=$('text-format-toolbar');
