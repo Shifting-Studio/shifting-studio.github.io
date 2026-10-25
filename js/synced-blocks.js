@@ -1,6 +1,7 @@
 import { supabase } from './supabase.js';
 import { renderSyncedContent, syncContent, reachesBlock } from './sync-utils.js';
 const theme=document.createElement('link');theme.rel='stylesheet';theme.href='css/polish.css';document.head.append(theme);
+const refresh=document.createElement('link');refresh.rel='stylesheet';refresh.href='css/studio-refresh.css';document.head.append(refresh);
 const $=id=>document.getElementById(id);
 const el=(tag,cls='',text)=>{const n=document.createElement(tag);n.className=cls;if(text!==undefined)n.textContent=String(text);return n;};
 const uid=()=>crypto.randomUUID();
