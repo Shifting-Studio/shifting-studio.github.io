@@ -1,6 +1,7 @@
 import { supabase } from './supabase.js';
 import { PAGE_TEMPLATES } from './page-templates.js';
 import { renderSyncedContent, syncContent } from './sync-utils.js';
+import { sanitizeRichHtml } from './rich-text.js';
 const $ = id => document.getElementById(id);
 const groups = [
   {name:'PERSONAL',icon:'✧',pages:[['About Me','♡','Your identity, personality, and backstory.'],['Appearance','✧','Describe your appearance and style.'],['Wardrobe','♧','Outfits, clothing, and style inspiration.']]},
@@ -37,6 +38,7 @@ function normalize(content){
   if(!Array.isArray(content))return [];
   return content.filter(b=>b&&typeof b==='object').map(b=>({
     id:typeof b.id==='string'?b.id:id(),
+    html:typeof b.html==='string'?sanitizeRichHtml(b.html):'',
     type:['paragraph','heading','quote','checklist','divider','synced','image','gallery','columns','profile','subpage','field'].includes(b.type)?b.type:'paragraph',
     text:typeof b.text==='string'?b.text:'',
     checked:!!b.checked,
@@ -193,6 +195,25 @@ function field(value,placeholder,onChange,cls='media-caption'){
   const input=node('input',cls);input.value=value;input.placeholder=placeholder;
   input.addEventListener('input',()=>{onChange(input.value);changed();});return input;
 }
+function richEditor(block,placeholder,cls='block-input'){
+  const editor=node('div',`rich-editor ${cls}`);editor.contentEditable='true';editor.role='textbox';
+  editor.setAttribute('aria-multiline','true');editor.dataset.placeholder=placeholder;
+  editor.innerHTML=sanitizeRichHtml(block.html||'');
+  if(!block.html)editor.textContent=block.text||'';
+  editor.addEventListener('input',()=>{
+    block.html=sanitizeRichHtml(editor.innerHTML);block.text=editor.innerText||editor.textContent||'';changed();
+  });
+  editor.addEventListener('paste',event=>{
+    event.preventDefault();const plain=event.clipboardData?.getData('text/plain')||'';
+    document.execCommand('insertText',false,plain);
+  });
+  editor.addEventListener('blur',()=>{
+    const safe=sanitizeRichHtml(editor.innerHTML);
+    if(editor.innerHTML!==safe)editor.innerHTML=safe;
+    block.html=safe;
+  });
+  return editor;
+}
 function renderBlocks(){
   const list=$('block-list');list.replaceChildren();
   if(!blocks.length){list.append(node('div','empty-blocks','Start with “＋ Text” or add a synced block from your library.'));return;}
@@ -259,20 +280,15 @@ function renderBlocks(){
       item.append(makeAction('Open subpage →',()=>openSubpage(block),'Edit nested page'));
     }else if(block.type==='field'){
       item.append(node('label','template-field-label',block.label||'Untitled field'));
-      const answer=node('textarea','template-field-answer');answer.value=block.text;answer.rows=2;
-      answer.placeholder='Write your answer here…';
+      const answer=richEditor(block,'Write your answer here…','template-field-answer');
       answer.setAttribute('aria-label',block.label||'Field answer');
-      answer.addEventListener('input',()=>{block.text=answer.value;changed();});
       item.append(answer);
     }else{
       if(block.type==='checklist'){
         const checked=node('input');checked.type='checkbox';checked.checked=block.checked;checked.setAttribute('aria-label','Checklist completed');
         checked.addEventListener('change',()=>{block.checked=checked.checked;changed();});item.append(checked);
       }
-      const field=node('textarea','block-input');field.value=block.text;
-      field.placeholder=({paragraph:'Write something beautiful…',heading:'A lovely heading…',quote:'A favorite quote or affirmation…',checklist:'Something to remember…'})[block.type]||'Write here…';
-      field.rows=block.type==='heading'?2:3;
-      field.addEventListener('input',()=>{block.text=field.value;changed();});item.append(field);
+      item.append(richEditor(block,({paragraph:'Write something beautiful…',heading:'A lovely heading…',quote:'A favorite quote or affirmation…',checklist:'Something to remember…'})[block.type]||'Write here…'));
     }
     list.append(item);
   });
@@ -305,7 +321,7 @@ async function createSyncedFromSelection(){
   await loadSynced();renderBlocks();
   if(!(await savePage()))error('Your group was created, but replacing the selected blocks was not saved. Please retry saving before leaving.');
 }
-function blank(type,syncId=null){return {id:id(),type,text:'',checked:false,syncId,imagePath:'',galleryPaths:[],caption:'',left:'',right:'',profileName:'',profileRole:'',profileBio:'',subContent:'',label:''};}
+function blank(type,syncId=null){return {id:id(),type,text:'',html:'',checked:false,syncId,imagePath:'',galleryPaths:[],caption:'',left:'',right:'',profileName:'',profileRole:'',profileBio:'',subContent:'',label:''};}
 function add(type,syncId=null){blocks.push(blank(type,syncId));changed();renderBlocks();}
 function move(i,delta){const target=i+delta;if(target<0||target>=blocks.length)return;[blocks[i],blocks[target]]=[blocks[target],blocks[i]];changed();renderBlocks();}
 function duplicate(i){const copy=structuredClone(blocks[i]);copy.id=id();blocks.splice(i+1,0,copy);changed();renderBlocks();}
@@ -536,6 +552,59 @@ $('bg-apply-all').onclick=async()=>{
   }catch(e){$('bg-status').textContent=`Some pages may not have updated. ${e.message}`;}
   finally{button.disabled=false;}
 };
+// Floating text tools only activate for a real selection inside a script editor.
+const textToolbar=$('text-format-toolbar');
+let formatRange=null,formatEditor=null;
+function editorOf(node){
+  const element=node?.nodeType===Node.ELEMENT_NODE?node:node?.parentElement;
+  return element?.closest?.('.rich-editor')||null;
+}
+function updateTextToolbar(){
+  const selection=window.getSelection();
+  if(!selection||selection.isCollapsed||!selection.rangeCount){
+    if(!textToolbar.contains(document.activeElement))textToolbar.hidden=true;
+    return;
+  }
+  const range=selection.getRangeAt(0);
+  const startEditor=editorOf(range.startContainer),endEditor=editorOf(range.endContainer);
+  if(!startEditor||startEditor!==endEditor){textToolbar.hidden=true;return;}
+  formatEditor=startEditor;formatRange=range.cloneRange();
+  const rect=range.getBoundingClientRect();
+  textToolbar.hidden=false;
+  const toolbarWidth=textToolbar.offsetWidth||500;
+  const left=Math.min(Math.max(8,rect.left+rect.width/2-toolbarWidth/2),Math.max(8,innerWidth-toolbarWidth-8));
+  textToolbar.style.left=`${left}px`;
+  textToolbar.style.top=`${Math.max(8,rect.top-textToolbar.offsetHeight-12)}px`;
+}
+function applyFormat(command,value=null){
+  if(!formatRange||!formatEditor?.isConnected)return;
+  formatEditor.focus();
+  const sel=window.getSelection();sel.removeAllRanges();sel.addRange(formatRange);
+  document.execCommand(command,false,value);
+  formatEditor.dispatchEvent(new Event('input',{bubbles:true}));
+  if(sel.rangeCount)formatRange=sel.getRangeAt(0).cloneRange();
+}
+textToolbar.addEventListener('mousedown',event=>{
+  if(event.target.closest('button'))event.preventDefault();
+});
+for(const button of textToolbar.querySelectorAll('[data-format]')){
+  button.onclick=()=>applyFormat(button.dataset.format);
+}
+textToolbar.querySelector('[data-special="link"]').onclick=()=>{
+  if(!formatRange)return;
+  const raw=prompt('Enter a link (https://...)');if(raw===null)return;
+  try{
+    const link=new URL(raw.trim());
+    if(!['https:','http:'].includes(link.protocol))throw new Error('Only secure web links are allowed.');
+    applyFormat('createLink',link.href);
+  }catch{alert('Please enter a valid http:// or https:// link.');}
+};
+$('format-color').oninput=event=>applyFormat('foreColor',event.target.value);
+$('format-highlight').oninput=event=>applyFormat('hiliteColor',event.target.value);
+$('format-font').onchange=event=>{if(event.target.value)applyFormat('fontName',event.target.value);event.target.value='';};
+$('format-size').onchange=event=>{if(event.target.value)applyFormat('fontSize',event.target.value);event.target.value='';};
+document.addEventListener('selectionchange',()=>requestAnimationFrame(updateTextToolbar));
+document.addEventListener('keydown',event=>{if(event.key==='Escape')textToolbar.hidden=true;});
 $('subpage-title').oninput=()=>{if(!activeSubpage)return;activeSubpage.text=$('subpage-title').value;changed();$('subpage-heading').textContent=activeSubpage.text||'Untitled subpage';};
 $('subpage-content').oninput=()=>{if(!activeSubpage)return;activeSubpage.subContent=$('subpage-content').value;changed();};
 $('close-subpage').onclick=()=>{$('subpage-dialog').close();activeSubpage=null;renderBlocks();savePage();};

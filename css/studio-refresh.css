@@ -173,3 +173,23 @@ body.focus-writing .script-main{min-width:0}
 .background-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid #e7eee4;padding-top:16px}
 @media(max-width:800px){.background-layout{grid-template-columns:1fr}.background-preview-panel{position:static;order:-1}.background-preview{height:240px}.background-form{max-height:none}.background-modal{padding:20px}.background-presets{grid-template-columns:repeat(4,minmax(0,1fr))}.studio-lyric-layer{font-size:15px;max-width:55%}}
 @media(max-width:500px){.background-presets{grid-template-columns:repeat(2,minmax(0,1fr))}.background-modal{max-height:94vh}.background-preview{height:200px}.preview-paper{min-height:145px;padding:16px}.preview-paper strong{font-size:18px}}
+/* Rich-text selection bubble */
+.rich-editor{display:block;min-height:70px;white-space:pre-wrap;overflow-wrap:anywhere;outline:0;cursor:text}
+.rich-editor.block-input{padding:7px 0;line-height:1.8}
+.rich-editor.template-field-answer{min-height:66px;padding:11px 13px;line-height:1.7}
+.rich-editor:empty:before{content:attr(data-placeholder);color:#a7b7a8;pointer-events:none}
+.rich-editor:focus{outline:none}
+.rich-editor a,.sync-preview a{color:#417bb1;text-decoration:underline;text-underline-offset:2px}
+.rich-editor a:hover,.sync-preview a:hover{color:#275e8c}
+.rich-editor span[style],.rich-editor font{white-space:inherit}
+.floating-text-toolbar{position:fixed;z-index:100;display:flex;align-items:center;gap:3px;flex-wrap:nowrap;background:#293c30;color:#fff;border:1px solid #4e6d55;border-radius:12px;padding:7px;box-shadow:0 14px 35px #172c1b50;max-width:calc(100vw - 16px);overflow-x:auto;scrollbar-width:thin}
+.floating-text-toolbar[hidden]{display:none}
+.floating-text-toolbar button{flex:0 0 auto;background:transparent;border:0;border-radius:6px;padding:8px;color:#f4f8f2;cursor:pointer;font-size:12px;min-width:30px}
+.floating-text-toolbar button:hover{background:#47664c}
+.floating-text-toolbar .format-divider{width:1px;height:20px;background:#5c7560;margin:0 3px;flex:0 0 auto}
+.floating-text-toolbar select{background:#3c5742;color:#fff;border:1px solid #58725c;border-radius:6px;padding:7px 6px;font-size:11px;max-width:118px;cursor:pointer}
+.floating-text-toolbar option{color:#263d2e;background:#fff}
+.format-color{display:flex;align-items:center;gap:4px;padding:4px 5px;border-radius:6px;color:#fff;font-size:13px;cursor:pointer;flex:0 0 auto}
+.format-color input{border:0;background:transparent;padding:0;width:22px;height:24px;cursor:pointer}
+.format-color:hover{background:#47664c}
+@media(max-width:700px){.floating-text-toolbar{gap:2px;padding:5px;border-radius:9px}.floating-text-toolbar button{padding:7px;min-width:27px}.floating-text-toolbar select{max-width:82px}}

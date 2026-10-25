@@ -69,7 +69,7 @@ function renderParts(){
         if(part.type==='columns'){const [left,...rest]=text.value.split('\n---\n');part.left=left;part.right=rest.join('\n---\n');}
         else if(part.type==='profile')part.profileBio=text.value;
         else if(part.type==='subpage')part.subContent=text.value;
-        else part.text=text.value;
+        else {part.text=text.value;part.html='';}
       };row.append(text);
       if(part.type==='checklist'){
         const check=el('input');check.type='checkbox';check.checked=!!part.checked;check.onchange=()=>part.checked=check.checked;row.append(check);

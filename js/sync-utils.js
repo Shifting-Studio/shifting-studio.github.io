@@ -1,5 +1,7 @@
 // Reusable, read-only renderer. Never evaluates user-authored HTML.
+import { sanitizeRichHtml } from './rich-text.js';
 const make=(tag,className='',value)=>{const e=document.createElement(tag);e.className=className;if(value!==undefined)e.textContent=String(value);return e;};
+const rich=(tag,block,cls='')=>{const e=make(tag,cls);if(block.html)e.innerHTML=sanitizeRichHtml(block.html);else e.textContent=block.text||'';return e;};
 export function syncContent(block){
   return Array.isArray(block?.blocks)&&block.blocks.length ? block.blocks :
     (block?.content ? [{type:'paragraph',text:block.content}] : []);
@@ -31,12 +33,12 @@ export function renderSyncedContent(container,content,records,supabase,seen=new 
         renderSyncedContent(nestedBody,syncContent(nested),records,supabase,new Set([...seen,nested.id]),depth+1);
       }
     }else if(block.type==='divider')item.append(make('hr'));
-    else if(block.type==='heading')item.append(make('h3','',block.text||'Untitled heading'));
-    else if(block.type==='quote')item.append(make('blockquote','',block.text||''));
-    else if(block.type==='checklist')item.append(make('p','',`${block.checked?'☑':'☐'} ${block.text||''}`));
+    else if(block.type==='heading')item.append(rich('h3',block));
+    else if(block.type==='quote')item.append(rich('blockquote',block));
+    else if(block.type==='checklist'){item.append(make('span','',block.checked?'☑ ':'☐ '),rich('span',block));}
     else if(block.type==='field'){
       item.append(make('strong','',block.label||'Field'));
-      item.append(make('p','',block.text||'—'));
+      item.append(rich('p',block));
     }else if(block.type==='columns'){
       const columns=make('div','two-column-block');columns.append(make('p','',block.left||''),make('p','',block.right||''));item.append(columns);
     }else if(block.type==='profile'){
@@ -54,7 +56,7 @@ export function renderSyncedContent(container,content,records,supabase,seen=new 
       if(block.caption)item.append(make('p','',block.caption));
     }else if(block.type==='subpage'){
       item.append(make('strong','',`▤ ${block.text||'Subpage'}`));item.append(make('p','',block.subContent||''));
-    }else item.append(make('p','',block.text||''));
+    }else item.append(rich('p',block));
     container.append(item);
   }
 }
