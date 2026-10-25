@@ -14,7 +14,7 @@ const templates=groups.flatMap(group=>group.pages.map((p,i)=>({category:group.na
 const drId=new URLSearchParams(location.search).get('dr');
 let user,dr,pages=[],synced=[],current=null,blocks=[],selectedIds=new Set(),pageSettings={type:'pageSettings',icon:'',imagePath:'',templateApplied:false},version=0,savedVersion=0,savingPromise=null,timer=null,changing=false,uploads=0,activeSubpage=null,dragIndex=null;
 let lastRemoved=null,undoTimer=null;
-const backgroundDefaults={mode:'plain',color1:'#f8f9f5',color2:'#eaf1e7',color3:'#fdf7ec',imagePath:'',position:'center',tint:25,blur:0,paper:96,lyrics:'',lyricsPosition:'right',lyricsColor:'#35523d'};
+const backgroundDefaults={mode:'plain',color1:'#f8f9f5',color2:'#eaf1e7',color3:'#fdf7ec',imagePath:'',position:'center',tint:25,blur:0,paper:96,lyrics:'',lyricsPosition:'right',lyricsColor:'#35523d',lyricsLayout:'original',lyricsSeparator:'✦',lyricsFont:'Playfair Display',lyricsSize:'auto',lyricsSizePx:22,lyricsEffect:'classic',lyricsOpacity:45,lyricsRepeat:false};
 const backgroundPresets=[
   {name:'Sage Morning',mode:'gradient',color1:'#edf4e8',color2:'#d4e5d3'},
   {name:'Rose Garden',mode:'gradient',color1:'#f8e9ee',color2:'#eddbda'},
@@ -94,6 +94,37 @@ function backgroundDesign(background){
   const first=background.color1,second=background.color2;
   return background.mode==='gradient'?`linear-gradient(125deg, ${first} 0%, ${second} 55%, ${background.color3||second} 100%)`:first;
 }
+const lyricSeparators={continuous:' ',dot:' · ',star:' ✦ ',heart:' ♡ '};
+function formattedLyrics(background){
+  const original=String(background.lyrics||'');
+  const lines=original.split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
+  if(background.lyricsLayout==='original')return original;
+  const separator=background.lyricsLayout==='custom'?` ${String(background.lyricsSeparator||'✦').slice(0,12)} `:(lyricSeparators[background.lyricsLayout]||' ');
+  return lines.join(separator);
+}
+function expandLyrics(background,forPreview=false){
+  const text=formattedLyrics(background);
+  if(!text||!background.lyricsRepeat)return text;
+  const max=forPreview?900:4800;
+  const between=background.lyricsLayout==='original'?'\n':(background.lyricsLayout==='continuous'?' ':' ✦ ');
+  return Array(Math.min(18,Math.max(1,Math.ceil(max/(text.length+between.length))))).fill(text).join(between);
+}
+function lyricStyle(element,background,preview=false){
+  const full=background.lyricsPosition==='full';
+  element.dataset.position=background.lyricsPosition;
+  element.dataset.layout=background.lyricsLayout;
+  element.dataset.effect=background.lyricsEffect;
+  element.style.color=background.lyricsColor;
+  const font=String(background.lyricsFont||'Playfair Display');
+  const allowed=['Playfair Display','DM Sans','Georgia','Arial','Times New Roman','Courier New','Cormorant Garamond','Great Vibes','Cinzel'];
+  element.style.fontFamily=allowed.includes(font)?`"${font}", Georgia, serif`:'Georgia, serif';
+  const requested=background.lyricsSize==='auto'?null:Math.max(10,Math.min(90,Number(background.lyricsSizePx)||22));
+  const size=preview?(requested?Math.max(7,requested*.48):(full?11:12)):(requested||(full?'clamp(12px,1.25vw,23px)':'clamp(17px,2vw,28px)'));
+  element.style.fontSize=typeof size==='number'?`${size}px`:size;
+  element.style.opacity=String(Math.max(0.08,Math.min(1,(Number(background.lyricsOpacity)||45)/100)));
+  element.style.whiteSpace=background.lyricsLayout==='original'?'pre-wrap':'normal';
+  element.classList.toggle('lyric-fill',full);
+}
 async function updateBackground(){
   const background=safeBackground(pageSettings.background);
   const layer=document.querySelector('.studio-background-layer');
@@ -109,15 +140,13 @@ async function updateBackground(){
   layer.style.transform=background.blur>0?'scale(1.05)':'none';
   const paperAlpha=Math.max(.55,Math.min(1,Number(background.paper)/100||.96));
   paper.style.backgroundColor=`rgba(255,254,250,${paperAlpha})`;
-  lyricLayer.textContent=background.lyrics||'';
-  lyricLayer.dataset.position=background.lyricsPosition;
-  lyricLayer.style.color=background.lyricsColor;
+  lyricLayer.textContent=expandLyrics(background);
+  lyricStyle(lyricLayer,background);
   preview.style.backgroundImage=background.mode==='gradient'?backgroundDesign(background):'none';
   preview.style.backgroundColor=background.color1;
   preview.style.backgroundPosition=background.position;
-  $('bg-preview-lyric').textContent=background.lyrics||'';
-  $('bg-preview-lyric').dataset.position=background.lyricsPosition;
-  $('bg-preview-lyric').style.color=background.lyricsColor;
+  $('bg-preview-lyric').textContent=expandLyrics(background,true);
+  lyricStyle($('bg-preview-lyric'),background,true);
   preview.querySelector('.preview-paper').style.backgroundColor=`rgba(255,254,250,${paperAlpha})`;
   if(isImage){
     let signedUrl=backgroundUrlCache.get(background.imagePath)?.url;
@@ -136,7 +165,12 @@ async function updateBackground(){
 }
 function updateBackgroundForm(){
   const b=safeBackground(pageSettings.background);
-  for(const [id,value] of [['bg-mode',b.mode],['bg-color-1',b.color1],['bg-color-2',b.color2],['bg-color-3',b.color3],['bg-position',b.position],['bg-tint',b.tint],['bg-blur',b.blur],['bg-paper',b.paper],['bg-lyrics',b.lyrics],['bg-lyrics-position',b.lyricsPosition],['bg-lyrics-color',b.lyricsColor]])$(id).value=value;
+  for(const [id,value] of [['bg-mode',b.mode],['bg-color-1',b.color1],['bg-color-2',b.color2],['bg-color-3',b.color3],['bg-position',b.position],['bg-tint',b.tint],['bg-blur',b.blur],['bg-paper',b.paper],['bg-lyrics',b.lyrics],['bg-lyrics-position',b.lyricsPosition],['bg-lyrics-color',b.lyricsColor],['bg-lyrics-layout',b.lyricsLayout],['bg-lyrics-separator',b.lyricsSeparator],['bg-lyrics-font',b.lyricsFont],['bg-lyrics-size',b.lyricsSize],['bg-lyrics-size-px',b.lyricsSizePx],['bg-lyrics-effect',b.lyricsEffect],['bg-lyrics-opacity',b.lyricsOpacity]])$(id).value=value;
+  $('bg-lyrics-repeat').checked=!!b.lyricsRepeat;
+  $('bg-lyrics-separator').closest('label').hidden=b.lyricsLayout!=='custom';
+  $('bg-lyrics-size-px').closest('label').hidden=b.lyricsSize==='auto';
+  $('bg-lyrics-size-value').textContent=`${b.lyricsSizePx} px`;
+  $('bg-lyrics-opacity-value').textContent=`${b.lyricsOpacity}%`;
   $('bg-tint-value').textContent=`${b.tint}%`;$('bg-blur-value').textContent=`${b.blur} px`;$('bg-paper-value').textContent=`${b.paper}%`;
   $('bg-image-controls').hidden=b.mode!=='image';$('bg-remove-image').hidden=!b.imagePath;
   $('bg-color-2').closest('label').hidden=b.mode!=='gradient';$('bg-color-3').closest('label').hidden=b.mode!=='gradient';
@@ -145,7 +179,10 @@ function backgroundChanged(){
   if(!current)return;
   pageSettings.background={...safeBackground(pageSettings.background),mode:$('bg-mode').value,color1:$('bg-color-1').value,color2:$('bg-color-2').value,color3:$('bg-color-3').value,
     position:$('bg-position').value,tint:Number($('bg-tint').value),blur:Number($('bg-blur').value),paper:Number($('bg-paper').value),
-    lyrics:$('bg-lyrics').value.slice(0,600),lyricsPosition:$('bg-lyrics-position').value,lyricsColor:$('bg-lyrics-color').value};
+    lyrics:$('bg-lyrics').value.slice(0,12000),lyricsPosition:$('bg-lyrics-position').value,lyricsColor:$('bg-lyrics-color').value,
+    lyricsLayout:$('bg-lyrics-layout').value,lyricsSeparator:$('bg-lyrics-separator').value.slice(0,12),lyricsFont:$('bg-lyrics-font').value,
+    lyricsSize:$('bg-lyrics-size').value,lyricsSizePx:Number($('bg-lyrics-size-px').value),lyricsEffect:$('bg-lyrics-effect').value,
+    lyricsOpacity:Number($('bg-lyrics-opacity').value),lyricsRepeat:$('bg-lyrics-repeat').checked};
   updateBackgroundForm();updateBackground();changed();$('bg-status').textContent='Saving your background…';
 }
 async function uploadBackground(file){
@@ -515,6 +552,45 @@ $('cover-input').onchange=event=>{if(current&&event.target.files.length)uploadIm
 $('remove-cover').onclick=()=>{if(!current)return;pageSettings.imagePath='';changed();renderCover();};
 const backgroundLayer=node('div','studio-background-layer'),lyricLayer=node('div','studio-lyric-layer');
 document.querySelector('.script-main').prepend(backgroundLayer,lyricLayer);
+// Advanced overlay controls are built as a separate panel to keep the main editor uncluttered.
+function buildLyricsControls(){
+  const textarea=$('bg-lyrics');textarea.maxLength=12000;textarea.rows=6;
+  textarea.placeholder='Paste your own lyrics or write a quote. Line breaks can be preserved or joined with a symbol.';
+  const position=$('bg-lyrics-position');
+  const full=node('option','','Fill the whole screen');full.value='full';position.append(full);
+  const panel=node('div','lyrics-advanced');
+  panel.append(node('span','background-section-label','TEXT WALLPAPER & EFFECTS'));
+  const labeledSelect=(labelText,fieldId,options)=>{
+    const label=node('label','',labelText),select=node('select');select.id=fieldId;
+    for(const [value,title] of options){const option=node('option','',title);option.value=value;select.append(option);}
+    label.append(select);panel.append(label);return select;
+  };
+  labeledSelect('Line breaks & separators','bg-lyrics-layout',[
+    ['original','Exactly as written (keep each line)'],['continuous','One continuous paragraph'],['dot','Join lines with · dots'],
+    ['star','Join lines with ✦ stars'],['heart','Join lines with ♡ hearts'],['custom','My own separator']
+  ]);
+  const separator=node('label','','Custom separator'),sepInput=node('input');sepInput.id='bg-lyrics-separator';sepInput.maxLength=12;sepInput.placeholder='e.g. ★ / • / ~';separator.append(sepInput);panel.append(separator);
+  labeledSelect('Font','bg-lyrics-font',[
+    ['Playfair Display','Elegant serif'],['Cormorant Garamond','Poetic / editorial'],['Great Vibes','Romantic cursive'],
+    ['Cinzel','Royal lettering'],['Georgia','Classic'],['DM Sans','Clean modern'],['Arial','Minimal'],
+    ['Times New Roman','Book page'],['Courier New','Typewriter']
+  ]);
+  labeledSelect('Text size','bg-lyrics-size',[['auto','Automatic (recommended)'],['custom','Choose exact size']]);
+  const size=node('label',''),sizeTitle=node('span','','Manual size · '),sizeValue=node('span');sizeValue.id='bg-lyrics-size-value';
+  const sizeSlider=node('input');sizeSlider.type='range';sizeSlider.min=10;sizeSlider.max=90;sizeSlider.id='bg-lyrics-size-px';
+  size.append(sizeTitle,sizeValue,sizeSlider);panel.append(size);
+  labeledSelect('Text effect','bg-lyrics-effect',[
+    ['classic','Soft classic'],['glass','Liquid glass'],['foggy','Foggy / dreamy'],['glow','Luminous glow'],
+    ['outline','Outlined letters'],['embossed','Embossed paper'],['typewriter','Vintage ink']
+  ]);
+  const opacity=node('label',''),opacityTitle=node('span','','Text visibility · '),opacityValue=node('span');opacityValue.id='bg-lyrics-opacity-value';
+  const opacitySlider=node('input');opacitySlider.type='range';opacitySlider.min=8;opacitySlider.max=100;opacitySlider.id='bg-lyrics-opacity';
+  opacity.append(opacityTitle,opacityValue,opacitySlider);panel.append(opacity);
+  const repeat=node('label','lyrics-repeat'),checkbox=node('input');checkbox.type='checkbox';checkbox.id='bg-lyrics-repeat';
+  repeat.append(checkbox,node('span','','Repeat the text to fill empty space'));panel.append(repeat);
+  $('bg-lyrics-color').closest('label').after(panel);
+}
+buildLyricsControls();
 for(const preset of backgroundPresets){
   const sample=node('button','background-preset');sample.type='button';sample.title=preset.name;
   const swatch=node('span','preset-swatch');swatch.style.background=backgroundDesign(preset);
@@ -525,7 +601,7 @@ for(const preset of backgroundPresets){
 $('open-background').onclick=()=>{if(!current)return;updateBackgroundForm();$('bg-status').textContent='';$('background-dialog').showModal();};
 $('close-background').onclick=()=>$('background-dialog').close();
 $('bg-done').onclick=async()=>{if(uploads){$('bg-status').textContent='Please wait for the picture upload.';return;}await savePage();$('background-dialog').close();};
-for(const setting of ['bg-mode','bg-color-1','bg-color-2','bg-color-3','bg-position','bg-tint','bg-blur','bg-paper','bg-lyrics','bg-lyrics-position','bg-lyrics-color']){
+for(const setting of ['bg-mode','bg-color-1','bg-color-2','bg-color-3','bg-position','bg-tint','bg-blur','bg-paper','bg-lyrics','bg-lyrics-position','bg-lyrics-color','bg-lyrics-layout','bg-lyrics-separator','bg-lyrics-font','bg-lyrics-size','bg-lyrics-size-px','bg-lyrics-effect','bg-lyrics-opacity','bg-lyrics-repeat']){
   $(setting).addEventListener('input',backgroundChanged);
 }
 $('bg-upload').onchange=e=>{const file=e.target.files?.[0];e.target.value='';if(file)uploadBackground(file);};

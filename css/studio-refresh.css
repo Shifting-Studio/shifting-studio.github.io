@@ -193,3 +193,28 @@ body.focus-writing .script-main{min-width:0}
 .format-color input{border:0;background:transparent;padding:0;width:22px;height:24px;cursor:pointer}
 .format-color:hover{background:#47664c}
 @media(max-width:700px){.floating-text-toolbar{gap:2px;padding:5px;border-radius:9px}.floating-text-toolbar button{padding:7px;min-width:27px}.floating-text-toolbar select{max-width:82px}}
+/* Full-canvas text wallpaper, from verse layout to immersive typographic texture */
+.lyrics-advanced{margin:18px 0 10px;padding:16px;border:1px solid #dfe8dc;background:linear-gradient(130deg,#f6faf3,#fdfcf8);border-radius:13px}
+.lyrics-advanced>.background-section-label{margin-bottom:13px}
+.lyrics-advanced label{display:block;margin:11px 0}
+.lyrics-advanced label[hidden]{display:none}
+.lyrics-advanced .lyrics-repeat{display:flex;align-items:center;gap:10px;padding:12px;background:#eef5e9;border-radius:9px;font-size:11px;cursor:pointer}
+.lyrics-repeat input{width:16px;height:16px;accent-color:#568263;flex:0 0 auto;margin:0}
+.studio-lyric-layer.lyric-fill{inset:0!important;top:0!important;right:0!important;bottom:0!important;left:0!important;max-width:none!important;box-sizing:border-box;padding:24px 25px;overflow:hidden;text-align:justify!important;columns:3;column-gap:32px;column-fill:auto;line-height:1.55;white-space:pre-wrap;word-break:normal;text-shadow:none;z-index:-1}
+.studio-lyric-layer.lyric-fill[data-layout="original"]{white-space:pre-wrap}
+.studio-lyric-layer.lyric-fill[data-layout="continuous"],.studio-lyric-layer.lyric-fill[data-layout="dot"],.studio-lyric-layer.lyric-fill[data-layout="star"],.studio-lyric-layer.lyric-fill[data-layout="heart"],.studio-lyric-layer.lyric-fill[data-layout="custom"]{white-space:normal}
+.studio-lyric-layer[data-effect="classic"],.preview-lyric[data-effect="classic"]{text-shadow:0 1px 4px #fff9}
+.studio-lyric-layer[data-effect="glass"],.preview-lyric[data-effect="glass"]{font-weight:600;text-shadow:0 1px 0 #ffffffed,0 -1px 0 #ffffffa8,1px 2px 1px #24402d75,0 0 13px #ffffffc9;-webkit-text-stroke:.45px #ffffffb3;filter:drop-shadow(0 2px 4px #283b364a)}
+.studio-lyric-layer[data-effect="foggy"],.preview-lyric[data-effect="foggy"]{filter:blur(1.25px);text-shadow:0 0 6px currentColor,0 0 17px currentColor}
+.studio-lyric-layer[data-effect="glow"],.preview-lyric[data-effect="glow"]{text-shadow:0 0 3px #fff,0 0 8px currentColor,0 0 20px currentColor}
+.studio-lyric-layer[data-effect="outline"],.preview-lyric[data-effect="outline"]{-webkit-text-stroke:.85px currentColor;color:transparent!important;text-shadow:0 1px 3px #fff5}
+.studio-lyric-layer[data-effect="embossed"],.preview-lyric[data-effect="embossed"]{text-shadow:-1px -1px 1px #ffffffd6,1px 1px 2px #203b3555;font-weight:600}
+.studio-lyric-layer[data-effect="typewriter"],.preview-lyric[data-effect="typewriter"]{font-family:'Courier New',monospace!important;letter-spacing:.6px;text-shadow:.5px .5px #1c302c66}
+.preview-lyric.lyric-fill{inset:0!important;top:0!important;left:0!important;right:0!important;bottom:0!important;max-width:none!important;text-align:justify!important;columns:3;column-gap:10px;column-fill:auto;line-height:1.4;overflow:hidden;padding:10px;white-space:pre-wrap;z-index:0}
+.preview-lyric.lyric-fill[data-layout="original"]{white-space:pre-wrap}
+.preview-lyric.lyric-fill:not([data-layout="original"]){white-space:normal}
+.background-preview .preview-paper{z-index:2}
+.background-preview{isolation:isolate}
+.lyrics-advanced select{max-width:100%}
+@media(max-width:800px){.studio-lyric-layer.lyric-fill{columns:2;padding:18px;column-gap:18px}.preview-lyric.lyric-fill{columns:2}}
+@media(max-width:500px){.studio-lyric-layer.lyric-fill{columns:1;padding:12px}.preview-lyric.lyric-fill{columns:2;padding:8px}}
