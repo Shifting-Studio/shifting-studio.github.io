@@ -39,3 +39,9 @@ body{background:radial-gradient(ellipse at 90% 4%,#eaf0e5 0,transparent 42%),#f7
 .block-subpage>button{border:1px solid #dce5d9;border-radius:9px;padding:10px 14px;color:#537159;background:#edf3ea;cursor:pointer}
 #subpage-dialog{width:min(720px,calc(100% - 20px))}#subpage-dialog textarea{min-height:300px;line-height:1.8}
 @media(max-width:650px){.page-cover{height:170px;margin-left:0;margin-right:0}.template-bar>span{width:100%}}
+.block-field{background:#fffefa;border-color:#e3eadf;padding:17px 20px}
+.template-field-label{display:block;font:600 12px 'DM Sans',sans-serif;color:#4c6e54;letter-spacing:.25px;margin:4px 0 9px}
+.template-field-answer{display:block;width:100%;min-height:64px;border:0;border-radius:8px;background:#f8faf6;padding:12px 13px;line-height:1.7;resize:vertical;font:13px 'DM Sans',sans-serif;color:#3c5542;outline:0}
+.template-field-answer:focus{box-shadow:0 0 0 2px #b7cfb8;background:#fff}
+.template-field-answer::placeholder{color:#a8b6a8}
+.block-field .block-topline{margin-bottom:4px}.block-field .block-type{color:#a0b0a1}

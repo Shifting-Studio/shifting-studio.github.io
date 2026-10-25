@@ -1,4 +1,5 @@
 import { supabase } from './supabase.js';
+import { PAGE_TEMPLATES } from './page-templates.js';
 const $ = id => document.getElementById(id);
 const groups = [
   {name:'PERSONAL',icon:'✧',pages:[['About Me','♡','Your identity, personality, and backstory.'],['Appearance','✧','Describe your appearance and style.'],['Wardrobe','♧','Outfits, clothing, and style inspiration.']]},
@@ -9,7 +10,7 @@ const groups = [
 ];
 const templates=groups.flatMap(group=>group.pages.map((p,i)=>({category:group.name,title:p[0],icon:p[1],hint:p[2],position:i})));
 const drId=new URLSearchParams(location.search).get('dr');
-let user,dr,pages=[],synced=[],current=null,blocks=[],pageSettings={type:'pageSettings',icon:'',imagePath:''},version=0,savedVersion=0,savingPromise=null,timer=null,changing=false,uploads=0,activeSubpage=null,dragIndex=null;
+let user,dr,pages=[],synced=[],current=null,blocks=[],pageSettings={type:'pageSettings',icon:'',imagePath:'',templateApplied:false},version=0,savedVersion=0,savingPromise=null,timer=null,changing=false,uploads=0,activeSubpage=null,dragIndex=null;
 const status=msg=>$('save-state').textContent=msg;
 const error=msg=>$('page-error').textContent=msg||'';
 const node=(tag,cls,text)=>{const el=document.createElement(tag);el.className=cls||'';if(text!==undefined)el.textContent=text;return el;};
@@ -19,7 +20,7 @@ function normalize(content){
   if(!Array.isArray(content))return [];
   return content.filter(b=>b&&typeof b==='object').map(b=>({
     id:typeof b.id==='string'?b.id:id(),
-    type:['paragraph','heading','quote','checklist','divider','synced','image','gallery','columns','profile','subpage'].includes(b.type)?b.type:'paragraph',
+    type:['paragraph','heading','quote','checklist','divider','synced','image','gallery','columns','profile','subpage','field'].includes(b.type)?b.type:'paragraph',
     text:typeof b.text==='string'?b.text:'',
     checked:!!b.checked,
     syncId:typeof b.syncId==='string'?b.syncId:null,
@@ -31,7 +32,8 @@ function normalize(content){
     profileName:typeof b.profileName==='string'?b.profileName:'',
     profileRole:typeof b.profileRole==='string'?b.profileRole:'',
     profileBio:typeof b.profileBio==='string'?b.profileBio:'',
-    subContent:typeof b.subContent==='string'?b.subContent:''
+    subContent:typeof b.subContent==='string'?b.subContent:'',
+    label:typeof b.label==='string'?b.label:''
   }));
 }
 function changed(){version++;status('Unsaved changes…');clearTimeout(timer);timer=setTimeout(savePage,750);}
@@ -156,6 +158,13 @@ function renderBlocks(){
       item.append(field(block.text,'Subpage title',v=>block.text=v,'profile-field profile-name'));
       item.append(node('p','sync-caption',(block.subContent||'').slice(0,135)||'A nested page waiting for your words…'));
       item.append(makeAction('Open subpage →',()=>openSubpage(block),'Edit nested page'));
+    }else if(block.type==='field'){
+      item.append(node('label','template-field-label',block.label||'Untitled field'));
+      const answer=node('textarea','template-field-answer');answer.value=block.text;answer.rows=2;
+      answer.placeholder='Write your answer here…';
+      answer.setAttribute('aria-label',block.label||'Field answer');
+      answer.addEventListener('input',()=>{block.text=answer.value;changed();});
+      item.append(answer);
     }else{
       if(block.type==='checklist'){
         const checked=node('input');checked.type='checkbox';checked.checked=block.checked;checked.setAttribute('aria-label','Checklist completed');
@@ -169,7 +178,7 @@ function renderBlocks(){
     list.append(item);
   });
 }
-function blank(type,syncId=null){return {id:id(),type,text:'',checked:false,syncId,imagePath:'',galleryPaths:[],caption:'',left:'',right:'',profileName:'',profileRole:'',profileBio:'',subContent:''};}
+function blank(type,syncId=null){return {id:id(),type,text:'',checked:false,syncId,imagePath:'',galleryPaths:[],caption:'',left:'',right:'',profileName:'',profileRole:'',profileBio:'',subContent:'',label:''};}
 function add(type,syncId=null){blocks.push(blank(type,syncId));changed();renderBlocks();}
 function move(i,delta){const target=i+delta;if(target<0||target>=blocks.length)return;[blocks[i],blocks[target]]=[blocks[target],blocks[i]];changed();renderBlocks();}
 function remove(i){blocks.splice(i,1);changed();renderBlocks();}
@@ -194,6 +203,19 @@ function addTemplate(kind){
   }
   changed();renderBlocks();
 }
+function originalTemplate(title,append=false){
+  const layout=PAGE_TEMPLATES[title];if(!layout)return;
+  if(!append&&blocks.length)return;
+  for(const entry of layout){
+    if(typeof entry==='string'){
+      const item=blank('field');item.label=entry;blocks.push(item);
+    }else if(entry?.section){
+      const item=blank('heading');item.text=entry.section;blocks.push(item);
+    }
+  }
+  pageSettings.templateApplied=true;
+  changed();renderBlocks();
+}
 async function selectPage(title){
   if(changing)return;changing=true;
   try{
@@ -203,13 +225,14 @@ async function selectPage(title){
     if(!next||!template)return;
     current=next;
     const meta=Array.isArray(next.content)?next.content.find(b=>b?.type==='pageSettings'):null;
-    pageSettings={type:'pageSettings',icon:typeof meta?.icon==='string'?meta.icon:'',imagePath:typeof meta?.imagePath==='string'?meta.imagePath:''};
+    pageSettings={type:'pageSettings',icon:typeof meta?.icon==='string'?meta.icon:'',imagePath:typeof meta?.imagePath==='string'?meta.imagePath:'',templateApplied:meta?.templateApplied===true};
     blocks=normalize(Array.isArray(next.content)?next.content.filter(b=>b?.type!=='pageSettings'):next.content);
     version=savedVersion=0;clearTimeout(timer);
     $('page-category').textContent=template.category;$('page-icon').textContent=template.icon;
     $('page-heading').textContent=title;$('page-hint').textContent=template.hint;
     document.title=`${title} | ${dr.title} — Shifting Studio`;
     await loadSynced();renderCover();renderBlocks();status('✓ All changes saved');
+    if(!blocks.length&&!pageSettings.templateApplied)originalTemplate(title);
     document.querySelectorAll('.page-link').forEach(b=>b.classList.toggle('active',b.dataset.page===title));
     document.querySelector('.script-sidebar').classList.remove('open');
   }finally{changing=false;}
@@ -246,6 +269,11 @@ async function init(){
 }
 for(const [button,type] of [['add-text','paragraph'],['add-heading','heading'],['add-quote','quote'],['add-checklist','checklist'],['add-divider','divider'],['add-image','image'],['add-gallery','gallery'],['add-columns','columns'],['add-profile','profile'],['add-subpage','subpage']])$(button).onclick=()=>add(type);
 document.querySelectorAll('[data-template]').forEach(btn=>btn.onclick=()=>addTemplate(btn.dataset.template));
+$('apply-page-template').onclick=()=>{
+  if(!current)return;
+  if(blocks.length&&!confirm('Add the original blank fields below your existing content? Nothing will be deleted.'))return;
+  originalTemplate(current.title,true);
+};
 $('change-icon').onclick=()=>{
   if(!current)return;
   const result=prompt('Enter an emoji or short symbol for this page:',pageSettings.icon||'✧');
