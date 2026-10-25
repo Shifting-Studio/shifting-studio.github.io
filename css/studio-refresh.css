@@ -106,3 +106,29 @@ body{background:#f8f9f5;color:var(--ink);font-size:14px;-webkit-font-smoothing:a
 .danger-button:disabled{opacity:.4;cursor:not-allowed}
 .danger-button:hover:not(:disabled){background:#8f403b}
 @media(max-width:700px){.compact-editor-tools .block-toolbar{gap:6px}.compact-editor-tools .write-first{flex:1}.compact-editor-tools .organize-button{margin-left:0}.compact-editor-tools .extra-tools-content{left:-105px;right:auto;min-width:265px}.card-footer .delete-script-button{margin-left:auto}}
+/* Gentle power tools: search, focus writing, duplicate and undo. */
+.studio-actions{display:flex;align-items:center;gap:9px;margin-left:auto}
+.studio-actions .save-indicator{min-width:100px;text-align:right;padding-left:9px}
+.topbar-action{border:1px solid #e4ebe1;background:#f8faf7;color:#5f7864;padding:9px 13px;border-radius:9px;font-weight:700;font-size:11px;white-space:nowrap}
+.topbar-action:hover,.topbar-action[aria-pressed=true]{background:#e4efe2;border-color:#c9dfc8;color:#376044}
+.search-modal{width:min(600px,calc(100% - 25px));max-height:min(760px,85vh)}
+.search-modal h2{margin-bottom:14px}.search-modal label{color:#647c69}
+.script-search-results{display:grid;gap:7px;max-height:390px;overflow:auto;padding:7px 2px;margin-top:16px}
+.script-search-results .search-result{display:grid;text-align:left;gap:5px;width:100%;border:1px solid #e5ebe2;background:#fff;border-radius:10px;padding:12px 14px;color:#4b6651}
+.search-result:hover{background:#f0f6ed;border-color:#bfd5bd}.search-result strong{font-size:12px}
+.search-result span{font-size:11px;line-height:1.5;color:#889b8b;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.search-placeholder{color:#8a9b8b;font-size:12px;line-height:1.6;text-align:center;padding:20px 14px}
+.editor-block.search-highlight{animation:searchGlow 1.8s ease-out}
+@keyframes searchGlow{0%,25%{box-shadow:0 0 0 4px #a7d3a399;background:#ecf8eb}100%{box-shadow:none}}
+.undo-toast{position:fixed;bottom:24px;right:25px;z-index:40;display:flex;align-items:center;gap:15px;border:1px solid #d2dfcf;background:#314f3b;color:#fff;border-radius:12px;box-shadow:0 15px 40px #26482f30;padding:13px 17px;font-size:12px}
+.undo-toast[hidden]{display:none}.undo-toast button{border:0;background:transparent;color:#c6edc8;font-weight:800;cursor:pointer}
+.undo-toast button:last-child{color:#f0f4ee;font-size:17px;font-weight:400}
+body.focus-writing .script-layout{grid-template-columns:minmax(0,1fr)}
+body.focus-writing .script-sidebar{display:none}
+body.focus-writing .script-banner{display:none}
+body.focus-writing .script-content{max-width:900px;padding-top:27px}
+body.focus-writing .writing-card{box-shadow:none;border-color:#eff2ed;min-height:75vh}
+body.focus-writing .page-appearance,body.focus-writing .layout-presets,body.focus-writing .selection-bar,body.focus-writing .editor-hint,body.focus-writing .tip{display:none!important}
+body.focus-writing .writing-card .editor-command-center{background:transparent;border:0;border-top:1px solid #edf2ea;padding:13px 0}
+body.focus-writing .script-main{min-width:0}
+@media(max-width:700px){.studio-actions{gap:5px}.topbar-action{padding:7px 9px;font-size:10px}.studio-actions .save-indicator{min-width:0;padding-left:0;font-size:9px}.script-main .topbar .breadcrumb{display:none}.undo-toast{bottom:13px;left:13px;right:13px;justify-content:space-between}}

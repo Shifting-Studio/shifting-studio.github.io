@@ -20,7 +20,7 @@
       <div class="sidebar-bottom">✦ Every little detail has a place here.</div>
     </aside>
     <div class="script-main">
-      <header class="topbar"><button class="mobile-pages" id="pages-toggle" type="button">☰ Pages</button><div class="breadcrumb"><a href="dashboard.html">My Realities</a> <span>/</span> <b id="breadcrumb-world">Script</b></div><div class="save-indicator" id="save-state" role="status" aria-live="polite">Loading...</div></header>
+      <header class="topbar"><button class="mobile-pages" id="pages-toggle" type="button">☰ Pages</button><div class="breadcrumb"><a href="dashboard.html">My Realities</a> <span>/</span> <b id="breadcrumb-world">Script</b></div><div class="studio-actions"><button id="search-pages" class="topbar-action" type="button" title="Search all 15 pages">⌕ Search</button><button id="focus-mode" class="topbar-action" type="button" aria-pressed="false" title="Hide distractions while writing">◫ Focus</button><div class="save-indicator" id="save-state" role="status" aria-live="polite">Loading...</div></div></header>
       <main class="script-content">
         <section class="script-banner"><span class="eyebrow">✦ MY DESIRED REALITY</span><h1 id="dr-heading">My Reality</h1><p id="dr-description">All the details of your imagined world, beautifully organized.</p></section>
         <article class="writing-card">
@@ -40,12 +40,14 @@
         </article>
         <div class="tip">Tip: Use the sidebar to move between pages. Your changes are saved before you switch.</div>
         <p id="page-error" class="page-error" role="alert"></p>
+        <div class="undo-toast" id="undo-toast" hidden><span id="undo-message">Block removed</span><button type="button" id="undo-remove">Undo</button><button type="button" id="dismiss-undo" aria-label="Dismiss">×</button></div>
       </main>
     </div>
   </div>
   <dialog id="sync-picker" class="modal"><div class="eyebrow">◇ CONNECT YOUR WRITING</div><h2>Insert synced block</h2><p>Select a reusable block from your library.</p><label>Synced block<select id="sync-options"></select></label><div class="modal-actions"><button class="ghost" type="button" id="cancel-sync">Cancel</button><button class="primary" type="button" id="confirm-sync">Insert block</button></div><p id="sync-error" class="error" role="alert"></p></dialog>
   <dialog id="subpage-dialog" class="modal"><div class="eyebrow">▤ NESTED PAGE</div><h2 id="subpage-heading">Subpage</h2><label>Page title<input id="subpage-title" maxlength="120"></label><label>Page contents<textarea id="subpage-content" rows="12" placeholder="Write your subpage here..."></textarea></label><div class="modal-actions"><button class="primary" id="close-subpage" type="button">Done</button></div></dialog>
   <dialog id="group-dialog" class="modal"><div class="eyebrow">◇ REUSABLE GROUP</div><h2>Create a synced block</h2><p>All selected blocks become one reusable group. Existing nested synced blocks stay linked.</p><label>Group name<input id="group-title" maxlength="120" placeholder="e.g. My universal rules"></label><div class="modal-actions"><button class="ghost" type="button" id="cancel-group">Cancel</button><button class="primary" type="button" id="confirm-group">Create synced group</button></div><p id="group-error" role="alert" class="error"></p></dialog>
+  <dialog id="search-dialog" class="modal search-modal"><div class="eyebrow">SEARCH YOUR REALITY</div><h2>Find anything in your script</h2><label>Search across all pages<input id="script-search-input" type="search" placeholder="Names, places, rules, memories…" autocomplete="off"></label><div id="script-search-results" class="script-search-results" aria-live="polite"></div><div class="modal-actions"><button type="button" class="ghost" id="close-search">Close</button></div></dialog>
   <script type="module" src="js/block-editor.js"></script>
 </body>
 </html>
