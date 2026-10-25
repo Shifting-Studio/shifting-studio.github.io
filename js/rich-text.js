@@ -28,6 +28,9 @@ export function sanitizeRichHtml(html){
         if(safeColor(color))next.style.color=color;
         if(safeColor(highlight))next.style.backgroundColor=highlight;
         if(allowedFonts.has(face))next.style.fontFamily=`"${face}"`;
+        if(['bold','600','700','800','900'].includes(styles.fontWeight))next.style.fontWeight=styles.fontWeight;
+        if(styles.fontStyle==='italic')next.style.fontStyle='italic';
+        if(['underline','line-through'].includes(styles.textDecorationLine||styles.textDecoration))next.style.textDecoration=styles.textDecorationLine||styles.textDecoration;
         const size=child.getAttribute('size');
         if(size&&/^[1-7]$/.test(size))next.style.fontSize=({1:'10px',2:'12px',3:'14px',4:'17px',5:'21px',6:'26px',7:'32px'})[size];
         if(styles.fontSize&&/^\d{1,2}px$/.test(styles.fontSize))next.style.fontSize=styles.fontSize;

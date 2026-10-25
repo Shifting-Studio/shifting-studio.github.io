@@ -15,6 +15,9 @@ const drId=new URLSearchParams(location.search).get('dr');
 let user,dr,pages=[],synced=[],current=null,blocks=[],selectedIds=new Set(),pageSettings={type:'pageSettings',icon:'',imagePath:'',templateApplied:false},version=0,savedVersion=0,savingPromise=null,timer=null,changing=false,uploads=0,activeSubpage=null,dragIndex=null;
 let lastRemoved=null,undoTimer=null;
 const backgroundDefaults={mode:'plain',color1:'#f8f9f5',color2:'#eaf1e7',color3:'#fdf7ec',imagePath:'',position:'center',tint:25,blur:0,paper:96,lyrics:'',lyricsPosition:'right',lyricsColor:'#35523d',lyricsLayout:'original',lyricsSeparator:'✦',lyricsFont:'Playfair Display',lyricsSize:'auto',lyricsSizePx:22,lyricsEffect:'classic',lyricsOpacity:45,lyricsRepeat:false};
+const headingFonts=['Playfair Display','Cormorant Garamond','Cinzel','Georgia','DM Sans','Arial','Times New Roman','Great Vibes'];
+const typographyDefaults={headingFont:'Playfair Display',headingSize:26};
+const safeTypography=value=>({headingFont:headingFonts.includes(value?.headingFont)?value.headingFont:typographyDefaults.headingFont,headingSize:Math.max(16,Math.min(44,Number(value?.headingSize)||26))});
 const backgroundPresets=[
   {name:'Sage Morning',mode:'gradient',color1:'#edf4e8',color2:'#d4e5d3'},
   {name:'Rose Garden',mode:'gradient',color1:'#f8e9ee',color2:'#eddbda'},
@@ -89,6 +92,15 @@ function renderCover(){
   const box=$('page-cover');box.replaceChildren();box.hidden=!pageSettings.imagePath;
   if(pageSettings.imagePath)box.append(photo(pageSettings.imagePath,'page-cover-photo'));
   $('remove-cover').hidden=!pageSettings.imagePath;
+}
+function applyTypography(){
+  const settings=safeTypography(pageSettings.typography);
+  const card=document.querySelector('.writing-card');
+  card.style.setProperty('--dr-heading-font',`"${settings.headingFont}", Georgia, serif`);
+  card.style.setProperty('--dr-heading-size',`${settings.headingSize}px`);
+  card.style.setProperty('--dr-page-title-size',`${Math.round(settings.headingSize*1.35)}px`);
+  const title=$('typography-preview');
+  if(title){title.style.fontFamily=`"${settings.headingFont}",Georgia,serif`;title.style.fontSize=`${settings.headingSize}px`;}
 }
 function backgroundDesign(background){
   const first=background.color1,second=background.color2;
@@ -246,7 +258,8 @@ function richEditor(block,placeholder,cls='block-input'){
   });
   editor.addEventListener('blur',()=>{
     const safe=sanitizeRichHtml(editor.innerHTML);
-    if(editor.innerHTML!==safe)editor.innerHTML=safe;
+    // Never rebuild live DOM on blur: doing so invalidates the selected Range
+    // before font and size dropdowns can apply their formatting.
     block.html=safe;
   });
   return editor;
@@ -449,13 +462,13 @@ async function selectPage(title){
     if(!next||!template)return;
     current=next;selectedIds.clear();clearUndo();
     const meta=Array.isArray(next.content)?next.content.find(b=>b?.type==='pageSettings'):null;
-    pageSettings={type:'pageSettings',icon:typeof meta?.icon==='string'?meta.icon:'',imagePath:typeof meta?.imagePath==='string'?meta.imagePath:'',templateApplied:meta?.templateApplied===true,background:safeBackground(meta?.background)};
+    pageSettings={type:'pageSettings',icon:typeof meta?.icon==='string'?meta.icon:'',imagePath:typeof meta?.imagePath==='string'?meta.imagePath:'',templateApplied:meta?.templateApplied===true,background:safeBackground(meta?.background),typography:safeTypography(meta?.typography)};
     blocks=normalize(Array.isArray(next.content)?next.content.filter(b=>b?.type!=='pageSettings'):next.content);
     version=savedVersion=0;clearTimeout(timer);
     $('page-category').textContent=template.category;$('page-icon').textContent=template.icon;
     $('page-heading').textContent=title;$('page-hint').textContent=template.hint;
     document.title=`${title} | ${dr.title} — Shifting Studio`;
-    await loadSynced();renderCover();updateBackgroundForm();updateBackground();renderBlocks();status('✓ All changes saved');
+    await loadSynced();renderCover();applyTypography();updateBackgroundForm();updateBackground();renderBlocks();status('✓ All changes saved');
     if(!blocks.length&&!pageSettings.templateApplied)originalTemplate(title);
     document.querySelectorAll('.page-link').forEach(b=>b.classList.toggle('active',b.dataset.page===title));
     document.querySelector('.script-sidebar').classList.remove('open');
@@ -628,6 +641,56 @@ $('bg-apply-all').onclick=async()=>{
   }catch(e){$('bg-status').textContent=`Some pages may not have updated. ${e.message}`;}
   finally{button.disabled=false;}
 };
+// Shared heading styles can be propagated to the whole desired reality.
+const typographyButton=node('button','typography-open','Aa Heading styles');typographyButton.type='button';
+document.querySelector('.page-customize').append(typographyButton);
+const typographyDialog=document.createElement('dialog');typographyDialog.className='modal typography-dialog';
+const typographyEyebrow=node('div','eyebrow','✦ CONSISTENT TYPOGRAPHY');
+const typographyTitle=node('h2','','Heading styles');
+const typographyHelp=node('p','typography-help','Choose one font and size for your page title and heading blocks. Apply it to all pages to keep your whole DR consistent.');
+const typoFontLabel=node('label','','Heading font'),typoFont=node('select');typoFont.id='typography-font';
+for(const font of headingFonts){const option=node('option','',font);option.value=font;option.style.fontFamily=`"${font}",serif`;typoFont.append(option);}
+typoFontLabel.append(typoFont);
+const typoSizeLabel=node('label','','Heading size'),typoSize=node('input');typoSize.type='range';typoSize.id='typography-size';typoSize.min=16;typoSize.max=44;
+const typoSizeValue=node('span','typography-value');typoSizeValue.id='typography-size-value';typoSizeLabel.append(typoSize,typoSizeValue);
+const typoPreview=node('div','typography-preview','A beautiful new chapter');typoPreview.id='typography-preview';
+const typoMessage=node('p','typography-message');typoMessage.id='typography-message';
+const typoActions=node('div','modal-actions'),typoClose=node('button','ghost','Done'),typoAll=node('button','primary','Apply to all 15 pages');
+typoClose.type=typoAll.type='button';typoActions.append(typoClose,typoAll);
+typographyDialog.append(typographyEyebrow,typographyTitle,typographyHelp,typoFontLabel,typoSizeLabel,typoPreview,typoActions,typoMessage);
+document.body.append(typographyDialog);
+typographyButton.onclick=()=>{
+  const settings=safeTypography(pageSettings.typography);
+  typoFont.value=settings.headingFont;typoSize.value=settings.headingSize;typoSizeValue.textContent=`${settings.headingSize} px`;
+  typoMessage.textContent='Changes to this page save automatically.';applyTypography();typographyDialog.showModal();
+};
+const updateTypography=()=>{
+  pageSettings.typography=safeTypography({headingFont:typoFont.value,headingSize:typoSize.value});
+  typoSizeValue.textContent=`${pageSettings.typography.headingSize} px`;
+  applyTypography();changed();
+};
+typoFont.onchange=updateTypography;typoSize.oninput=updateTypography;
+typoClose.onclick=()=>typographyDialog.close();
+typoAll.onclick=async()=>{
+  if(!confirm('Use this heading font and size on all 15 pages of this DR? This replaces other heading styles, but keeps all your writing.'))return;
+  typoAll.disabled=true;typoMessage.textContent='Updating your pages…';
+  try{
+    if(!(await flush()))throw new Error('Could not save the current page.');
+    const style=structuredClone(safeTypography(pageSettings.typography));let count=0;
+    for(const page of pages){
+      if(page.id===current?.id){count++;continue;}
+      const content=Array.isArray(page.content)?structuredClone(page.content):typeof page.content==='string'?[{id:id(),type:'paragraph',text:page.content}]:[];
+      let settings=content.find(b=>b?.type==='pageSettings');
+      if(!settings){settings={type:'pageSettings',icon:'',imagePath:'',templateApplied:false};content.unshift(settings);}
+      settings.typography=style;
+      const {data,error:saveError}=await supabase.from('script_pages').update({content,updated_at:new Date().toISOString()}).eq('id',page.id).eq('user_id',user.id).select('id');
+      if(saveError||!data?.length)throw new Error(`Could not update ${page.title}: ${saveError?.message||'Permission denied'}`);
+      page.content=content;count++;
+    }
+    typoMessage.textContent=`Done! All ${count} pages use the same heading styles.`;
+  }catch(e){typoMessage.textContent=`Some pages may not have updated. ${e.message}`;}
+  finally{typoAll.disabled=false;}
+};
 // Floating text tools only activate for a real selection inside a script editor.
 const textToolbar=$('text-format-toolbar');
 let formatRange=null,formatEditor=null;
@@ -655,10 +718,34 @@ function updateTextToolbar(){
 function applyFormat(command,value=null){
   if(!formatRange||!formatEditor?.isConnected)return;
   formatEditor.focus();
-  const sel=window.getSelection();sel.removeAllRanges();sel.addRange(formatRange);
-  document.execCommand(command,false,value);
-  formatEditor.dispatchEvent(new Event('input',{bubbles:true}));
+  const sel=window.getSelection(),range=formatRange.cloneRange();
+  if(range.collapsed||!formatEditor.contains(range.commonAncestorContainer))return;
+  sel.removeAllRanges();sel.addRange(range);
+  let wrapper;
+  if(command==='removeFormat'){
+    const cleanText=range.toString(),replacement=document.createTextNode(cleanText);
+    range.deleteContents();range.insertNode(replacement);
+    const next=document.createRange();next.selectNodeContents(replacement);sel.removeAllRanges();sel.addRange(next);
+  }else{
+    wrapper=document.createElement(command==='createLink'?'a':'span');
+    if(command==='createLink'){
+      wrapper.href=value;wrapper.target='_blank';wrapper.rel='noopener noreferrer';
+    }else if(command==='bold')wrapper.style.fontWeight='700';
+    else if(command==='italic')wrapper.style.fontStyle='italic';
+    else if(command==='underline')wrapper.style.textDecoration='underline';
+    else if(command==='strikeThrough')wrapper.style.textDecoration='line-through';
+    else if(command==='foreColor')wrapper.style.color=value;
+    else if(command==='hiliteColor')wrapper.style.backgroundColor=value;
+    else if(command==='fontName')wrapper.style.fontFamily=`"${value}"`;
+    else if(command==='fontSize')wrapper.style.fontSize=({1:'10px',2:'12px',3:'14px',4:'17px',5:'21px',6:'26px',7:'32px'})[value]||'14px';
+    else return;
+    const content=range.extractContents();wrapper.append(content);range.insertNode(wrapper);
+    const next=document.createRange();next.selectNodeContents(wrapper);
+    sel.removeAllRanges();sel.addRange(next);
+  }
   if(sel.rangeCount)formatRange=sel.getRangeAt(0).cloneRange();
+  formatEditor.dispatchEvent(new Event('input',{bubbles:true}));
+  requestAnimationFrame(updateTextToolbar);
 }
 textToolbar.addEventListener('mousedown',event=>{
   if(event.target.closest('button'))event.preventDefault();
@@ -679,6 +766,10 @@ $('format-color').oninput=event=>applyFormat('foreColor',event.target.value);
 $('format-highlight').oninput=event=>applyFormat('hiliteColor',event.target.value);
 $('format-font').onchange=event=>{if(event.target.value)applyFormat('fontName',event.target.value);event.target.value='';};
 $('format-size').onchange=event=>{if(event.target.value)applyFormat('fontSize',event.target.value);event.target.value='';};
+for(const option of $('format-font').options){if(option.value)option.style.fontFamily=`"${option.value}",sans-serif`;}
+for(const option of $('format-size').options){
+  if(option.value)option.style.fontSize=({2:'12px',3:'14px',4:'17px',5:'21px',6:'26px'})[option.value];
+}
 document.addEventListener('selectionchange',()=>requestAnimationFrame(updateTextToolbar));
 document.addEventListener('keydown',event=>{if(event.key==='Escape')textToolbar.hidden=true;});
 $('subpage-title').oninput=()=>{if(!activeSubpage)return;activeSubpage.text=$('subpage-title').value;changed();$('subpage-heading').textContent=activeSubpage.text||'Untitled subpage';};
