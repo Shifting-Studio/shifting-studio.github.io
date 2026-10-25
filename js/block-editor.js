@@ -722,6 +722,20 @@ function updateTextToolbar(){
   textToolbar.style.left=`${left}px`;
   textToolbar.style.top=`${Math.max(8,rect.top-textToolbar.offsetHeight-12)}px`;
 }
+function selectedTextHasFormat(range,command){
+  const walker=document.createTreeWalker(formatEditor,NodeFilter.SHOW_TEXT);
+  let found=false,allStyled=true,textNode;
+  while((textNode=walker.nextNode())){
+    if(!textNode.textContent?.trim()||!range.intersectsNode(textNode))continue;
+    found=true;
+    const style=getComputedStyle(textNode.parentElement);
+    const active=command==='bold'
+      ? (style.fontWeight==='bold'||Number(style.fontWeight)>=600)
+      : style.fontStyle==='italic'||style.fontStyle==='oblique';
+    if(!active){allStyled=false;break;}
+  }
+  return found&&allStyled;
+}
 function applyFormat(command,value=null){
   if(!formatRange||!formatEditor?.isConnected)return;
   formatEditor.focus();
@@ -737,8 +751,8 @@ function applyFormat(command,value=null){
     wrapper=document.createElement(command==='createLink'?'a':'span');
     if(command==='createLink'){
       wrapper.href=value;wrapper.target='_blank';wrapper.rel='noopener noreferrer';
-    }else if(command==='bold')wrapper.style.fontWeight='700';
-    else if(command==='italic')wrapper.style.fontStyle='italic';
+    }else if(command==='bold')wrapper.style.fontWeight=selectedTextHasFormat(range,'bold')?'normal':'700';
+    else if(command==='italic')wrapper.style.fontStyle=selectedTextHasFormat(range,'italic')?'normal':'italic';
     else if(command==='underline')wrapper.style.textDecoration='underline';
     else if(command==='strikeThrough')wrapper.style.textDecoration='line-through';
     else if(command==='foreColor')wrapper.style.color=value;
