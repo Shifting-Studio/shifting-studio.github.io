@@ -117,9 +117,9 @@ function formattedLyrics(background){
 function expandLyrics(background,forPreview=false){
   const text=formattedLyrics(background);
   if(!text||!background.lyricsRepeat)return text;
-  const max=forPreview?900:4800;
+  const max=forPreview?1200:(background.lyricsPosition==='full'?24000:4800);
   const between=background.lyricsLayout==='original'?'\n':(background.lyricsLayout==='continuous'?' ':' ✦ ');
-  return Array(Math.min(18,Math.max(1,Math.ceil(max/(text.length+between.length))))).fill(text).join(between);
+  return Array(Math.min(40,Math.max(1,Math.ceil(max/(text.length+between.length))))).fill(text).join(between);
 }
 function lyricStyle(element,background,preview=false){
   const full=background.lyricsPosition==='full';
@@ -617,6 +617,13 @@ $('bg-done').onclick=async()=>{if(uploads){$('bg-status').textContent='Please wa
 for(const setting of ['bg-mode','bg-color-1','bg-color-2','bg-color-3','bg-position','bg-tint','bg-blur','bg-paper','bg-lyrics','bg-lyrics-position','bg-lyrics-color','bg-lyrics-layout','bg-lyrics-separator','bg-lyrics-font','bg-lyrics-size','bg-lyrics-size-px','bg-lyrics-effect','bg-lyrics-opacity','bg-lyrics-repeat']){
   $(setting).addEventListener('input',backgroundChanged);
 }
+$('bg-lyrics-position').addEventListener('change',()=>{
+  // Full-screen wallpaper defaults to flowing text; users can still
+  // choose original line breaks, dots, or stars afterward.
+  if($('bg-lyrics-position').value==='full'&&$('bg-lyrics-layout').value==='original'){
+    $('bg-lyrics-layout').value='continuous';backgroundChanged();
+  }
+});
 $('bg-upload').onchange=e=>{const file=e.target.files?.[0];e.target.value='';if(file)uploadBackground(file);};
 $('bg-remove-image').onclick=()=>{pageSettings.background={...safeBackground(pageSettings.background),imagePath:'',mode:'plain'};updateBackgroundForm();updateBackground();changed();$('bg-status').textContent='Background picture removed.';};
 $('bg-reset').onclick=()=>{if(!confirm('Reset the background styling for this page? Your writing will stay.'))return;pageSettings.background={...backgroundDefaults};updateBackgroundForm();updateBackground();changed();$('bg-status').textContent='Background reset.';};
