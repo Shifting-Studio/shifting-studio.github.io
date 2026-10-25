@@ -13,6 +13,21 @@ const templates=groups.flatMap(group=>group.pages.map((p,i)=>({category:group.na
 const drId=new URLSearchParams(location.search).get('dr');
 let user,dr,pages=[],synced=[],current=null,blocks=[],selectedIds=new Set(),pageSettings={type:'pageSettings',icon:'',imagePath:'',templateApplied:false},version=0,savedVersion=0,savingPromise=null,timer=null,changing=false,uploads=0,activeSubpage=null,dragIndex=null;
 let lastRemoved=null,undoTimer=null;
+const backgroundDefaults={mode:'plain',color1:'#f8f9f5',color2:'#eaf1e7',color3:'#fdf7ec',imagePath:'',position:'center',tint:25,blur:0,paper:96,lyrics:'',lyricsPosition:'right',lyricsColor:'#35523d'};
+const backgroundPresets=[
+  {name:'Sage Morning',mode:'gradient',color1:'#edf4e8',color2:'#d4e5d3'},
+  {name:'Rose Garden',mode:'gradient',color1:'#f8e9ee',color2:'#eddbda'},
+  {name:'Golden Hour',mode:'gradient',color1:'#f8ecd7',color2:'#e4c99f'},
+  {name:'Lavender Haze',mode:'gradient',color1:'#ece8fb',color2:'#d9d5ed'},
+  {name:'Ocean Mist',mode:'gradient',color1:'#e0eff3',color2:'#c0dce5'},
+  {name:'Midnight Ink',mode:'gradient',color1:'#293c4c',color2:'#63758b'},
+  {name:'Ivory Paper',mode:'plain',color1:'#f7f6ef',color2:'#f7f6ef'},
+  {name:'Forest',mode:'gradient',color1:'#526c58',color2:'#879d79'}
+];
+let bgLoadToken=0;
+const backgroundUrlCache=new Map();
+const safeColor=(value,fallback)=>/^#[0-9a-f]{6}$/i.test(value||'')?value:fallback;
+const safeBackground=value=>({...backgroundDefaults,...(value&&typeof value==='object'?value:{}),color1:safeColor(value?.color1,backgroundDefaults.color1),color2:safeColor(value?.color2,backgroundDefaults.color2),color3:safeColor(value?.color3,backgroundDefaults.color3),lyricsColor:safeColor(value?.lyricsColor,backgroundDefaults.lyricsColor)});
 const status=msg=>$('save-state').textContent=msg;
 const error=msg=>$('page-error').textContent=msg||'';
 const node=(tag,cls,text)=>{const el=document.createElement(tag);el.className=cls||'';if(text!==undefined)el.textContent=text;return el;};
@@ -72,6 +87,79 @@ function renderCover(){
   const box=$('page-cover');box.replaceChildren();box.hidden=!pageSettings.imagePath;
   if(pageSettings.imagePath)box.append(photo(pageSettings.imagePath,'page-cover-photo'));
   $('remove-cover').hidden=!pageSettings.imagePath;
+}
+function backgroundDesign(background){
+  const first=background.color1,second=background.color2;
+  return background.mode==='gradient'?`linear-gradient(125deg, ${first} 0%, ${second} 55%, ${background.color3||second} 100%)`:first;
+}
+async function updateBackground(){
+  const background=safeBackground(pageSettings.background);
+  const layer=document.querySelector('.studio-background-layer');
+  const lyricLayer=document.querySelector('.studio-lyric-layer');
+  const preview=$('bg-preview');
+  const paper=document.querySelector('.writing-card');
+  const token=++bgLoadToken;
+  const isImage=background.mode==='image'&&!!background.imagePath;
+  layer.style.backgroundImage=background.mode==='gradient'?backgroundDesign(background):'none';
+  layer.style.backgroundColor=isImage?background.color1:background.mode==='gradient'?background.color2:background.color1;
+  layer.style.backgroundPosition=background.position;
+  layer.style.filter=`blur(${Math.max(0,Math.min(20,Number(background.blur)||0))}px)`;
+  layer.style.transform=background.blur>0?'scale(1.05)':'none';
+  const paperAlpha=Math.max(.55,Math.min(1,Number(background.paper)/100||.96));
+  paper.style.backgroundColor=`rgba(255,254,250,${paperAlpha})`;
+  lyricLayer.textContent=background.lyrics||'';
+  lyricLayer.dataset.position=background.lyricsPosition;
+  lyricLayer.style.color=background.lyricsColor;
+  preview.style.backgroundImage=background.mode==='gradient'?backgroundDesign(background):'none';
+  preview.style.backgroundColor=background.color1;
+  preview.style.backgroundPosition=background.position;
+  $('bg-preview-lyric').textContent=background.lyrics||'';
+  $('bg-preview-lyric').dataset.position=background.lyricsPosition;
+  $('bg-preview-lyric').style.color=background.lyricsColor;
+  preview.querySelector('.preview-paper').style.backgroundColor=`rgba(255,254,250,${paperAlpha})`;
+  if(isImage){
+    let signedUrl=backgroundUrlCache.get(background.imagePath)?.url;
+    if(!signedUrl||backgroundUrlCache.get(background.imagePath).expires<Date.now()){
+      const result=await supabase.storage.from('script-images').createSignedUrl(background.imagePath,3600);
+      signedUrl=result.data?.signedUrl;
+      if(signedUrl)backgroundUrlCache.set(background.imagePath,{url:signedUrl,expires:Date.now()+3300000});
+    }
+    if(token!==bgLoadToken)return;
+    if(signedUrl){
+      const url=`url("${signedUrl.replaceAll('"','%22')}")`;
+      const overlay=`linear-gradient(rgba(19,30,23,${background.tint/100}),rgba(19,30,23,${background.tint/100}))`;
+      layer.style.backgroundImage=`${overlay},${url}`;preview.style.backgroundImage=`${overlay},${url}`;
+    }
+  }
+}
+function updateBackgroundForm(){
+  const b=safeBackground(pageSettings.background);
+  for(const [id,value] of [['bg-mode',b.mode],['bg-color-1',b.color1],['bg-color-2',b.color2],['bg-color-3',b.color3],['bg-position',b.position],['bg-tint',b.tint],['bg-blur',b.blur],['bg-paper',b.paper],['bg-lyrics',b.lyrics],['bg-lyrics-position',b.lyricsPosition],['bg-lyrics-color',b.lyricsColor]])$(id).value=value;
+  $('bg-tint-value').textContent=`${b.tint}%`;$('bg-blur-value').textContent=`${b.blur} px`;$('bg-paper-value').textContent=`${b.paper}%`;
+  $('bg-image-controls').hidden=b.mode!=='image';$('bg-remove-image').hidden=!b.imagePath;
+  $('bg-color-2').closest('label').hidden=b.mode!=='gradient';$('bg-color-3').closest('label').hidden=b.mode!=='gradient';
+}
+function backgroundChanged(){
+  if(!current)return;
+  pageSettings.background={...safeBackground(pageSettings.background),mode:$('bg-mode').value,color1:$('bg-color-1').value,color2:$('bg-color-2').value,color3:$('bg-color-3').value,
+    position:$('bg-position').value,tint:Number($('bg-tint').value),blur:Number($('bg-blur').value),paper:Number($('bg-paper').value),
+    lyrics:$('bg-lyrics').value.slice(0,600),lyricsPosition:$('bg-lyrics-position').value,lyricsColor:$('bg-lyrics-color').value};
+  updateBackgroundForm();updateBackground();changed();$('bg-status').textContent='Saving your background…';
+}
+async function uploadBackground(file){
+  if(!file||!current)return;
+  const extensions={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif'};
+  if(!extensions[file.type]||file.size>5*1024*1024){$('bg-status').textContent='Choose a JPG, PNG, WebP, or GIF up to 5 MB.';return;}
+  const pageId=current.id;uploads++;$('bg-status').textContent='Uploading your picture…';
+  const path=`${user.id}/${dr.id}/backgrounds/${crypto.randomUUID()}.${extensions[file.type]}`;
+  try{
+    const {error:uploadError}=await supabase.storage.from('script-images').upload(path,file,{contentType:file.type,upsert:false});
+    if(uploadError)throw uploadError;
+    if(current?.id!==pageId)return;
+    pageSettings.background={...safeBackground(pageSettings.background),imagePath:path,mode:'image'};
+    updateBackgroundForm();updateBackground();changed();$('bg-status').textContent='Picture uploaded!';
+  }catch(e){$('bg-status').textContent=`Upload failed: ${e.message}`;}
+  finally{uploads--;}
 }
 function photo(path,cls='media-preview'){
   const img=node('img',cls);img.alt='Script image';img.loading='lazy';signedImage(path,img);return img;
@@ -308,13 +396,13 @@ async function selectPage(title){
     if(!next||!template)return;
     current=next;selectedIds.clear();clearUndo();
     const meta=Array.isArray(next.content)?next.content.find(b=>b?.type==='pageSettings'):null;
-    pageSettings={type:'pageSettings',icon:typeof meta?.icon==='string'?meta.icon:'',imagePath:typeof meta?.imagePath==='string'?meta.imagePath:'',templateApplied:meta?.templateApplied===true};
+    pageSettings={type:'pageSettings',icon:typeof meta?.icon==='string'?meta.icon:'',imagePath:typeof meta?.imagePath==='string'?meta.imagePath:'',templateApplied:meta?.templateApplied===true,background:safeBackground(meta?.background)};
     blocks=normalize(Array.isArray(next.content)?next.content.filter(b=>b?.type!=='pageSettings'):next.content);
     version=savedVersion=0;clearTimeout(timer);
     $('page-category').textContent=template.category;$('page-icon').textContent=template.icon;
     $('page-heading').textContent=title;$('page-hint').textContent=template.hint;
     document.title=`${title} | ${dr.title} — Shifting Studio`;
-    await loadSynced();renderCover();renderBlocks();status('✓ All changes saved');
+    await loadSynced();renderCover();updateBackgroundForm();updateBackground();renderBlocks();status('✓ All changes saved');
     if(!blocks.length&&!pageSettings.templateApplied)originalTemplate(title);
     document.querySelectorAll('.page-link').forEach(b=>b.classList.toggle('active',b.dataset.page===title));
     document.querySelector('.script-sidebar').classList.remove('open');
@@ -409,6 +497,45 @@ $('change-icon').onclick=()=>{
 };
 $('cover-input').onchange=event=>{if(current&&event.target.files.length)uploadImages(event.target.files,pageSettings);event.target.value='';};
 $('remove-cover').onclick=()=>{if(!current)return;pageSettings.imagePath='';changed();renderCover();};
+const backgroundLayer=node('div','studio-background-layer'),lyricLayer=node('div','studio-lyric-layer');
+document.querySelector('.script-main').prepend(backgroundLayer,lyricLayer);
+for(const preset of backgroundPresets){
+  const sample=node('button','background-preset');sample.type='button';sample.title=preset.name;
+  const swatch=node('span','preset-swatch');swatch.style.background=backgroundDesign(preset);
+  sample.append(swatch,node('span','',preset.name));
+  sample.onclick=()=>{pageSettings.background={...safeBackground(pageSettings.background),...preset,imagePath:''};updateBackgroundForm();updateBackground();changed();$('bg-status').textContent=`${preset.name} applied`;};
+  $('background-presets').append(sample);
+}
+$('open-background').onclick=()=>{if(!current)return;updateBackgroundForm();$('bg-status').textContent='';$('background-dialog').showModal();};
+$('close-background').onclick=()=>$('background-dialog').close();
+$('bg-done').onclick=async()=>{if(uploads){$('bg-status').textContent='Please wait for the picture upload.';return;}await savePage();$('background-dialog').close();};
+for(const setting of ['bg-mode','bg-color-1','bg-color-2','bg-color-3','bg-position','bg-tint','bg-blur','bg-paper','bg-lyrics','bg-lyrics-position','bg-lyrics-color']){
+  $(setting).addEventListener('input',backgroundChanged);
+}
+$('bg-upload').onchange=e=>{const file=e.target.files?.[0];e.target.value='';if(file)uploadBackground(file);};
+$('bg-remove-image').onclick=()=>{pageSettings.background={...safeBackground(pageSettings.background),imagePath:'',mode:'plain'};updateBackgroundForm();updateBackground();changed();$('bg-status').textContent='Background picture removed.';};
+$('bg-reset').onclick=()=>{if(!confirm('Reset the background styling for this page? Your writing will stay.'))return;pageSettings.background={...backgroundDefaults};updateBackgroundForm();updateBackground();changed();$('bg-status').textContent='Background reset.';};
+$('bg-apply-all').onclick=async()=>{
+  if(uploads){$('bg-status').textContent='Wait for the photo upload to finish first.';return;}
+  if(!confirm('Use this background on all 15 pages in this DR? Existing backgrounds on those pages will be replaced. All writing stays.'))return;
+  const button=$('bg-apply-all');button.disabled=true;$('bg-status').textContent='Applying to your pages…';
+  try{
+    if(!(await flush()))throw new Error('Could not save the current page.');
+    const style=structuredClone(safeBackground(pageSettings.background));let count=0;
+    for(const page of pages){
+      if(page.id===current?.id){count++;continue;}
+      const content=Array.isArray(page.content)?structuredClone(page.content):typeof page.content==='string'?[{id:id(),type:'paragraph',text:page.content}]:[];
+      const existing=content.find(b=>b?.type==='pageSettings');
+      if(existing)existing.background=style;
+      else content.unshift({type:'pageSettings',icon:'',imagePath:'',templateApplied:false,background:style});
+      const {data,error:saveError}=await supabase.from('script_pages').update({content,updated_at:new Date().toISOString()}).eq('id',page.id).eq('user_id',user.id).select('id');
+      if(saveError||!data?.length)throw new Error(`Could not update ${page.title}: ${saveError?.message||'Permission denied'}`);
+      page.content=content;count++;
+    }
+    $('bg-status').textContent=`Done! Your background now appears on ${count} pages.`;
+  }catch(e){$('bg-status').textContent=`Some pages may not have updated. ${e.message}`;}
+  finally{button.disabled=false;}
+};
 $('subpage-title').oninput=()=>{if(!activeSubpage)return;activeSubpage.text=$('subpage-title').value;changed();$('subpage-heading').textContent=activeSubpage.text||'Untitled subpage';};
 $('subpage-content').oninput=()=>{if(!activeSubpage)return;activeSubpage.subContent=$('subpage-content').value;changed();};
 $('close-subpage').onclick=()=>{$('subpage-dialog').close();activeSubpage=null;renderBlocks();savePage();};
