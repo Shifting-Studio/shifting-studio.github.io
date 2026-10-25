@@ -1,5 +1,6 @@
 import { supabase } from './supabase.js';
 import { PAGE_TEMPLATES } from './page-templates.js';
+import { renderSyncedContent, syncContent } from './sync-utils.js';
 const $ = id => document.getElementById(id);
 const groups = [
   {name:'PERSONAL',icon:'✧',pages:[['About Me','♡','Your identity, personality, and backstory.'],['Appearance','✧','Describe your appearance and style.'],['Wardrobe','♧','Outfits, clothing, and style inspiration.']]},
@@ -10,7 +11,7 @@ const groups = [
 ];
 const templates=groups.flatMap(group=>group.pages.map((p,i)=>({category:group.name,title:p[0],icon:p[1],hint:p[2],position:i})));
 const drId=new URLSearchParams(location.search).get('dr');
-let user,dr,pages=[],synced=[],current=null,blocks=[],pageSettings={type:'pageSettings',icon:'',imagePath:'',templateApplied:false},version=0,savedVersion=0,savingPromise=null,timer=null,changing=false,uploads=0,activeSubpage=null,dragIndex=null;
+let user,dr,pages=[],synced=[],current=null,blocks=[],selectedIds=new Set(),pageSettings={type:'pageSettings',icon:'',imagePath:'',templateApplied:false},version=0,savedVersion=0,savingPromise=null,timer=null,changing=false,uploads=0,activeSubpage=null,dragIndex=null;
 const status=msg=>$('save-state').textContent=msg;
 const error=msg=>$('page-error').textContent=msg||'';
 const node=(tag,cls,text)=>{const el=document.createElement(tag);el.className=cls||'';if(text!==undefined)el.textContent=text;return el;};
@@ -54,7 +55,7 @@ async function savePage(){
 }
 async function flush(){while(savingPromise)await savingPromise;return savePage();}
 async function loadSynced(){
-  const {data, error:e}=await supabase.from('synced_blocks').select('id,title,content').eq('user_id',user.id).order('title');
+  const {data, error:e}=await supabase.from('synced_blocks').select('id,title,content,blocks').eq('user_id',user.id).order('title');
   if(e){error(`Synced blocks unavailable: ${e.message}. Run the SQL update first.`);return false;}
   synced=data||[];return true;
 }
@@ -108,6 +109,11 @@ function renderBlocks(){
   if(!blocks.length){list.append(node('div','empty-blocks','Start with “＋ Text” or add a synced block from your library.'));return;}
   blocks.forEach((block,index)=>{
     const item=node('div',`editor-block block-${block.type}`),top=node('div','block-topline'),actions=node('div','block-actions');
+    if(selectedIds.has(block.id))item.classList.add('is-selected');
+    const selector=node('input','block-selector');selector.type='checkbox';selector.checked=selectedIds.has(block.id);
+    selector.setAttribute('aria-label',`Select ${block.type} block`);
+    selector.addEventListener('change',()=>{if(selector.checked)selectedIds.add(block.id);else selectedIds.delete(block.id);updateSelection();item.classList.toggle('is-selected',selector.checked);});
+    top.append(selector);
     const title=node('span','block-type',block.type==='synced'?'◇ SYNCED BLOCK':block.type);
     const handle=node('span','drag-handle','⠿');handle.draggable=true;handle.title='Drag to reorder';
     handle.addEventListener('dragstart',event=>{dragIndex=index;event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain',String(index));});
@@ -122,7 +128,10 @@ function renderBlocks(){
       const source=synced.find(s=>s.id===block.syncId);
       item.append(node('strong','',source?.title||'Missing synced block'));
       item.append(node('p','sync-caption','Changes to this source appear in every script that references it.'));
-      item.append(node('p','sync-body',source?.content||'This synced block is empty or has been removed.'));
+      const preview=node('div','sync-preview');
+      if(source)renderSyncedContent(preview,syncContent(source),synced,supabase,new Set([source.id]));
+      else preview.append(node('p','nested-warning','The source block is missing.'));
+      item.append(preview);
       const link=node('a','text-button','Edit in Synced Blocks Library ↗');link.href='synced-blocks.html';item.append(link);
     }else if(block.type==='divider'){
       item.append(document.createElement('hr'));
@@ -177,6 +186,32 @@ function renderBlocks(){
     }
     list.append(item);
   });
+  updateSelection();
+}
+function updateSelection(){
+  selectedIds=new Set([...selectedIds].filter(id=>blocks.some(b=>b.id===id)));
+  const count=selectedIds.size;
+  $('selected-count').textContent=count?`${count} block${count===1?'':'s'} selected`:'Select blocks to group them';
+  $('make-synced').disabled=count===0;
+}
+async function createSyncedFromSelection(){
+  const title=$('group-title').value.trim();
+  if(!title){$('group-error').textContent='Give your reusable group a name.';return;}
+  if(!selectedIds.size||!current)return;
+  if(uploads){$('group-error').textContent='Wait until your images finish uploading.';return;}
+  $('confirm-group').disabled=true;$('group-error').textContent='';
+  const chosen=blocks.filter(b=>selectedIds.has(b.id)).map(b=>structuredClone(b));
+  const result=await supabase.from('synced_blocks')
+    .insert({user_id:user.id,title,content:'',blocks:chosen}).select('id').single();
+  $('confirm-group').disabled=false;
+  if(result.error||!result.data){$('group-error').textContent=result.error?.message||'Could not create the synced group. Did you run the SQL update?';return;}
+  const first=blocks.findIndex(b=>selectedIds.has(b.id));
+  blocks=blocks.filter(b=>!selectedIds.has(b.id));
+  blocks.splice(first,0,blank('synced',result.data.id));
+  selectedIds.clear();changed();
+  $('group-dialog').close();
+  await loadSynced();renderBlocks();
+  if(!(await savePage()))error('Your group was created, but replacing the selected blocks was not saved. Please retry saving before leaving.');
 }
 function blank(type,syncId=null){return {id:id(),type,text:'',checked:false,syncId,imagePath:'',galleryPaths:[],caption:'',left:'',right:'',profileName:'',profileRole:'',profileBio:'',subContent:'',label:''};}
 function add(type,syncId=null){blocks.push(blank(type,syncId));changed();renderBlocks();}
@@ -223,7 +258,7 @@ async function selectPage(title){
     if(current&&!(await flush()))return;
     const next=pages.find(page=>page.title===title),template=templates.find(t=>t.title===title);
     if(!next||!template)return;
-    current=next;
+    current=next;selectedIds.clear();
     const meta=Array.isArray(next.content)?next.content.find(b=>b?.type==='pageSettings'):null;
     pageSettings={type:'pageSettings',icon:typeof meta?.icon==='string'?meta.icon:'',imagePath:typeof meta?.imagePath==='string'?meta.imagePath:'',templateApplied:meta?.templateApplied===true};
     blocks=normalize(Array.isArray(next.content)?next.content.filter(b=>b?.type!=='pageSettings'):next.content);
@@ -274,6 +309,15 @@ $('apply-page-template').onclick=()=>{
   if(blocks.length&&!confirm('Add the original blank fields below your existing content? Nothing will be deleted.'))return;
   originalTemplate(current.title,true);
 };
+$('select-all-blocks').onclick=()=>{selectedIds=new Set(blocks.map(b=>b.id));renderBlocks();};
+$('clear-block-selection').onclick=()=>{selectedIds.clear();renderBlocks();};
+$('make-synced').onclick=()=>{
+  if(!selectedIds.size)return;
+  $('group-title').value='';$('group-error').textContent='';
+  $('group-dialog').showModal();$('group-title').focus();
+};
+$('cancel-group').onclick=()=>$('group-dialog').close();
+$('confirm-group').onclick=createSyncedFromSelection;
 $('change-icon').onclick=()=>{
   if(!current)return;
   const result=prompt('Enter an emoji or short symbol for this page:',pageSettings.icon||'✧');
