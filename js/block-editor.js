@@ -209,6 +209,8 @@ async function createSyncedFromSelection(){
   blocks=blocks.filter(b=>!selectedIds.has(b.id));
   blocks.splice(first,0,blank('synced',result.data.id));
   selectedIds.clear();changed();
+  document.querySelector('.writing-card').classList.remove('selection-active');
+  $('selection-mode').setAttribute('aria-pressed','false');$('selection-mode').textContent='Select multiple';
   $('group-dialog').close();
   await loadSynced();renderBlocks();
   if(!(await savePage()))error('Your group was created, but replacing the selected blocks was not saved. Please retry saving before leaving.');
@@ -303,6 +305,19 @@ async function init(){
   if(response.error)throw response.error;pages=response.data||[];await ensurePages();navigation();await selectPage('About Me');
 }
 for(const [button,type] of [['add-text','paragraph'],['add-heading','heading'],['add-quote','quote'],['add-checklist','checklist'],['add-divider','divider'],['add-image','image'],['add-gallery','gallery'],['add-columns','columns'],['add-profile','profile'],['add-subpage','subpage']])$(button).onclick=()=>add(type);
+const blockHelp={
+  'add-text':'A normal paragraph for writing anything.',
+  'add-heading':'A title to separate sections of your script.',
+  'add-quote':'A highlighted quote or affirmation.',
+  'add-checklist':'A small item you can tick off.',
+  'add-divider':'A thin line between sections.',
+  'add-image':'One picture with an optional caption.',
+  'add-gallery':'A collection of several pictures.',
+  'add-columns':'Two pieces of writing next to each other.',
+  'add-profile':'A character profile with a picture and details.',
+  'add-subpage':'An extra page of writing inside this page.'
+};
+for(const [button,help] of Object.entries(blockHelp))$(button).title=help;
 document.querySelectorAll('[data-template]').forEach(btn=>btn.onclick=()=>addTemplate(btn.dataset.template));
 $('apply-page-template').onclick=()=>{
   if(!current)return;
@@ -311,6 +326,12 @@ $('apply-page-template').onclick=()=>{
 };
 $('select-all-blocks').onclick=()=>{selectedIds=new Set(blocks.map(b=>b.id));renderBlocks();};
 $('clear-block-selection').onclick=()=>{selectedIds.clear();renderBlocks();};
+$('selection-mode').onclick=()=>{
+  const card=document.querySelector('.writing-card');const active=card.classList.toggle('selection-active');
+  if(!active)selectedIds.clear();
+  $('selection-mode').setAttribute('aria-pressed',String(active));
+  $('selection-mode').textContent=active?'Done selecting':'Select multiple';renderBlocks();
+};
 $('make-synced').onclick=()=>{
   if(!selectedIds.size)return;
   $('group-title').value='';$('group-error').textContent='';

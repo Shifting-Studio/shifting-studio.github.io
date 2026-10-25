@@ -74,3 +74,35 @@ body{background:#f8f9f5;color:var(--ink);font-size:14px;-webkit-font-smoothing:a
 @media(max-width:1000px){.content{padding:31px 25px}.script-content{padding:30px 25px}.writing-card{padding:34px 31px}.reality-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.layout,.script-layout{grid-template-columns:1fr}.sidebar{padding:10px 15px}.brand{margin:0;padding:7px}.script-sidebar{position:fixed;display:none;width:min(85vw,300px);min-height:100vh;overflow:auto;z-index:35}.script-sidebar.open{display:flex}.topbar{height:59px;padding:0 16px}.content,.script-content{padding:24px 15px 55px}.intro,.script-banner{padding:25px 23px}.intro:after,.script-banner:after{right:-20px;font-size:125px}.heading-row{margin:27px 0 15px}.reality-grid{grid-template-columns:1fr}.writing-card{padding:25px 19px}.command-heading{align-items:start;flex-direction:column;gap:4px}.editor-command-center{padding:13px}.editor-command-center .block-toolbar{align-items:stretch}.tool-group{gap:5px}.editor-command-center .block-toolbar button{padding:8px 9px}.extra-tools-content{left:auto;right:-80px;min-width:250px}.template-bar{gap:5px}.template-bar>span{flex:0 0 100%}.selection-bar #selected-count{width:100%}.editor-block{padding:12px}.sidebar-bottom{display:none}}
 @media(prefers-reduced-motion:reduce){.card,.primary,.editor-block,.nav-link,.page-link{transition:none!important}}
+/* Second pass: remove decisions from the default writing surface. */
+.compact-editor-tools{padding:12px 13px;margin:17px 0 12px;background:#fbfcf8;border-color:#e7eee4}
+.compact-editor-tools .block-toolbar{gap:8px}
+.compact-editor-tools .write-first{background:#426b50!important;color:white!important;border-color:#426b50!important;font-size:12px!important;padding:11px 16px!important}
+.compact-editor-tools .write-first:hover{background:#31523c!important;color:white!important}
+.compact-editor-tools .organize-button{margin-left:auto;background:transparent!important;color:#788b7b!important;border-color:transparent!important;font-size:11px!important}
+.compact-editor-tools .organize-button[aria-pressed=true]{background:#e7f0e4!important;color:#3c6248!important;border-color:#d0e0cd!important}
+.compact-editor-tools .add-synced-tool{background:#edf4eb!important}
+.compact-editor-tools .extra-tools-content{min-width:325px;max-width:min(430px,calc(100vw - 40px));gap:15px}
+.compact-editor-tools .tool-tip{color:#8b9d8e;margin:2px 0 0!important;font-size:11px!important;line-height:1.6}
+.page-appearance{margin:4px 0 10px}.page-appearance summary,.layout-presets summary{color:#869a87;font-size:11px;font-weight:700;cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:7px;border-radius:8px;padding:7px 9px;margin-left:-9px}
+.page-appearance summary:hover,.layout-presets summary:hover{background:#f2f6f0;color:#55765d}
+.page-appearance summary::-webkit-details-marker,.layout-presets summary::-webkit-details-marker{display:none}
+.page-appearance .page-customize{margin:5px 0 10px;padding:10px 12px;background:#f8faf6;border:1px solid #e9eee5;border-radius:11px}
+.layout-presets{border-bottom:1px solid #edf1e9;margin-bottom:14px;padding-bottom:8px}
+.layout-presets .template-bar{border:0;padding:9px 0 4px}
+.writing-card .selection-bar{display:none;margin:8px 0 16px;background:#edf6ec}
+.writing-card.selection-active .selection-bar{display:flex}
+.writing-card .block-selector{display:none}
+.writing-card.selection-active .block-selector{display:inline-block}
+.writing-card .editor-block .block-actions{opacity:.25}
+.writing-card .editor-block:hover .block-actions,.writing-card .editor-block:focus-within .block-actions{opacity:.8}
+.writing-card .block-topline .block-type{font-size:9px;letter-spacing:.95px;color:#9caa9f}
+.delete-script-button{border:0;background:transparent;color:#a77b74;font-size:11px;padding:8px 0;cursor:pointer}
+.delete-script-button:hover{text-decoration:underline;color:#a54f47}
+.delete-explanation{color:#798a7c;font-size:13px;line-height:1.7;margin:0 0 16px}
+.delete-target{background:#f4f6f1;color:#395c44;padding:13px 15px;border-radius:10px;font-weight:700;overflow-wrap:anywhere}
+.delete-confirm-label{color:#6a7e70}
+.danger-button{background:#a9544e;color:white;border:0;border-radius:9px;padding:11px 15px;font-weight:700;font-size:12px}
+.danger-button:disabled{opacity:.4;cursor:not-allowed}
+.danger-button:hover:not(:disabled){background:#8f403b}
+@media(max-width:700px){.compact-editor-tools .block-toolbar{gap:6px}.compact-editor-tools .write-first{flex:1}.compact-editor-tools .organize-button{margin-left:0}.compact-editor-tools .extra-tools-content{left:-105px;right:auto;min-width:265px}.card-footer .delete-script-button{margin-left:auto}}

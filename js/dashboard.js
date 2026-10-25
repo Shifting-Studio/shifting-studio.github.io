@@ -2,7 +2,7 @@ import { supabase } from './supabase.js';
 
 // Uses the existing js/supabase.js from your GitHub repository.
 const $ = id => document.getElementById(id);
-let user, realities = [], editingId = null;
+let user, realities = [], editingId = null, deletingReality = null;
 const notice = (message = '') => $('notice').textContent = message;
 function element(tag, className, text) {
   const el = document.createElement(tag);
@@ -36,7 +36,11 @@ function render() {
     const edit = element('button', 'text-button', 'Edit details →');
     edit.type = 'button';
     edit.addEventListener('click', () => openDialog(dr));
-    foot.append(edit); body.append(foot);
+    foot.append(edit);
+    const remove = element('button', 'delete-script-button', 'Delete script');
+    remove.type='button';remove.setAttribute('aria-label',`Delete ${dr.title}`);
+    remove.addEventListener('click',()=>openDelete(dr));
+    foot.append(remove);body.append(foot);
     card.append(element('div', `card-cover ${theme}`, '✧'), body);
     card.classList.add('card-clickable');
     card.addEventListener('click', event => {
@@ -63,6 +67,23 @@ function openDialog(dr = null) {
   $('dr-title').focus();
 }
 function closeDialog() { $('editor-dialog').close(); editingId = null; }
+function openDelete(dr){
+  deletingReality=dr;$('delete-title').textContent=dr.title;$('delete-confirm-name').value='';
+  $('delete-error').textContent='';$('confirm-delete').disabled=true;$('delete-dialog').showModal();
+  $('delete-confirm-name').focus();
+}
+function closeDelete(){$('delete-dialog').close();deletingReality=null;}
+async function deleteReality(){
+  if(!deletingReality||$('delete-confirm-name').value.trim()!==deletingReality.title)return;
+  const target=deletingReality;$('confirm-delete').disabled=true;$('delete-error').textContent='';
+  const {data,error}=await supabase.from('desired_realities').delete()
+    .eq('id',target.id).eq('user_id',user.id).select('id');
+  if(error||!data?.length){
+    $('delete-error').textContent=error?.message||'Could not delete this script. Check your database permissions.';
+    $('confirm-delete').disabled=false;return;
+  }
+  closeDelete();await refresh();
+}
 async function refresh() {
   const {data,error} = await supabase.from('desired_realities')
     .select('id,title,description,theme,created_at')
@@ -93,6 +114,12 @@ async function init(){
 $('add-dr').addEventListener('click',()=>openDialog());
 $('cancel').addEventListener('click',closeDialog);
 $('dr-form').addEventListener('submit',saveReality);
+$('cancel-delete').addEventListener('click',closeDelete);
+$('delete-dialog').addEventListener('close',()=>deletingReality=null);
+$('delete-confirm-name').addEventListener('input',()=>{
+  $('confirm-delete').disabled=!deletingReality||$('delete-confirm-name').value.trim()!==deletingReality.title;
+});
+$('confirm-delete').addEventListener('click',deleteReality);
 $('search').addEventListener('input',render);
 $('sort').addEventListener('change',render);
 $('logout').addEventListener('click',async()=>{
